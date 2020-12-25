@@ -6,10 +6,11 @@ final class SPAudioTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        XCTAssertEqual(SPAudio().text, "Hello, World!")
+//        XCTAssertEqual(SPAudio().text, "Hello, World!")
     }
 
     static var allTests = [
-        ("testExample", testExample),
-    ]
+        (String, (SPAudioTests) -> () -> ())
+//        ("testExample", testExample),
+    ]()
 }
