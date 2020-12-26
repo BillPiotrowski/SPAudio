@@ -37,7 +37,7 @@ public class AudioMeter {
     private var scale: IntensityMultipler
     
     
-    private var didChange: (MeterReading) -> Void = { (meterReading)  in }
+//    private var didChange: (MeterReading) -> Void = { (meterReading)  in }
     public var speechTrigger: (_ word: String) -> Void = { arg in } {
         didSet {
             speechRecognition.triggerCallback = speechTrigger
@@ -199,9 +199,9 @@ extension AudioMeter {
     }
     
     // Verify performance regarding escaping!
-    public func setCallback(callback: @escaping (MeterReading) -> Void){
-        self.didChange = callback
-    }
+//    public func setCallback(callback: @escaping (MeterReading) -> Void){
+//        self.didChange = callback
+//    }
     
     
     public func set(property: AudioMeter.AudioMeterProperty){
