@@ -9,11 +9,12 @@
 import Foundation
 
 //Calculate 5 min high and low as opposed to complete high and low?
+/// Calculates the lowest average decibel level.
 class MeterMinimum {
-    private var totalCapacity: Int = 20
-    private var minimumDecibelReadings = [Float]()
+    private var totalCapacity: ArrayLength = 20
+    private var minimumDecibelReadings = [Decibel]()
     
-    func append(decibelReading: Float){
+    func append(decibelReading: Decibel){
         if(minimumDecibelReadings.count < totalCapacity){
             minimumDecibelReadings.append(decibelReading)
         } else if (decibelReading < highestDecibelReading) {
@@ -27,7 +28,7 @@ class MeterMinimum {
         minimumDecibelReadings.removeAll()
     }
     
-    var highestDecibelReading: Float {
+    var highestDecibelReading: Decibel {
         return minimumDecibelReadings.last ?? 0
     }
     
@@ -35,14 +36,14 @@ class MeterMinimum {
         return minimumDecibelReadings.reduce(0, +)
     }
     
-    private var arrayCount: Float {
-        return Float(minimumDecibelReadings.count)
+    private var arrayCount: ArrayLength {
+        return minimumDecibelReadings.count
     }
     
-    var average: Float {
+    var average: Decibel {
         guard arrayCount > 0
             else { return 0 }
-        return sum / arrayCount
+        return sum / Float(arrayCount)
     }
     
 }

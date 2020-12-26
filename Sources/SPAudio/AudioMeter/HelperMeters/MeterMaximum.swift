@@ -9,16 +9,17 @@
 import Foundation
 
 //Calculate 5 min high and low as opposed to complete high and low?
+/// Calculates the average maximum intensity level.
 class MeterMaximum {
     private var totalCapacity: Int = 4
-    private var maximumScaledLevelReadings = [Float]()
+    private var maximumScaledLevelReadings = [AudioMeter.Intensity]()
     
-    func append(scaledLevel: Float){
+    func append(intensity: AudioMeter.Intensity){
         if(maximumScaledLevelReadings.count < totalCapacity){
-            maximumScaledLevelReadings.append(scaledLevel)
-        } else if (scaledLevel > lowestScaledLevelReading) {
+            maximumScaledLevelReadings.append(intensity)
+        } else if (intensity > lowestScaledLevelReading) {
             maximumScaledLevelReadings.removeLast()
-            maximumScaledLevelReadings.append(scaledLevel)
+            maximumScaledLevelReadings.append(intensity)
         }
         maximumScaledLevelReadings.sort(by: >)
     }
@@ -27,7 +28,7 @@ class MeterMaximum {
         maximumScaledLevelReadings.removeAll()
     }
     
-    var lowestScaledLevelReading: Float {
+    var lowestScaledLevelReading: AudioMeter.Intensity {
         return maximumScaledLevelReadings.last ?? 0
     }
     
@@ -35,13 +36,13 @@ class MeterMaximum {
         return maximumScaledLevelReadings.reduce(0, +)
     }
     
-    private var arrayCount: Float {
-        return Float(maximumScaledLevelReadings.count)
+    private var arrayCount: ArrayLength {
+        return maximumScaledLevelReadings.count
     }
     
-    var average: Float {
+    var average: AudioMeter.Intensity {
         guard arrayCount > 0
             else { return 0 }
-        return sum / arrayCount
+        return sum / Float(arrayCount)
     }
 }

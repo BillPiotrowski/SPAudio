@@ -10,91 +10,72 @@ import SPCommon
 import UIKit
 import AVFoundation
 import AVKit
-
-public struct MeterReading {
-    public let intensityFast: Float
-    public let intensitySlow: Float
-    public let triggerWords: [String]
-    
-    public init(
-        intensityFast: Float,
-        intensitySlow: Float,
-        triggerWords: [String] = []
-    ){
-        self.intensityFast = intensityFast
-        self.intensitySlow = intensitySlow
-        self.triggerWords = triggerWords
-    }
-}
-
+import ReactiveSwift
 
 public class AudioMeter {
-    //var observations: [ObjectIdentifier : Observer] = [:]
     
+    // Test that intensity is correctly reset?
+    /// A static property to define the default meter intensity. Should be set to this on init and reset.
+    private static let defaultIntensity: Intensity = 0
+    
+    /// Default min dB reading. This should be used on init and reset. This affects the initial dynamic range of meter. Used to calculate both decibel reading and then volume ratio.
+    internal static let defaultMinDb: Decibel = -60.0
+    
+    
+    private static let defaultScale: IntensityMultipler = 1
+    
+    // Current design is that the meter is always held and the node is changed. Should the meter be dropped and a new one initialized for new taps?
+    /// The audio node that is being tapped.
     private var node: AVAudioNode?
-    
-    private (set) var value: Float = 0 {
-        
-        didSet {
-            //guard let meterReading = meterReading
-            //    else { return }
-            if let intensityChange = intensityChange {
-                intensityChange(value)
-            }
-            /*
-            let observation = Observation.meter(reading: meterReading)
-            sendToObservers(observation)
- */
-            
-            //self.didChange(meterReading)
-        }
-    }
     
     private let meter = DurationMeter()
     private let meterMinimum = MeterMinimum()
     private let meterMaximum = MeterMaximum()
     private let audioEngine: AudioEngineProtocol
     
-    //private var format = AVAudioFormat()
+    /// Multiplier used to increase dynamic range.
+    private var scale: IntensityMultipler
     
-    private var scale: Float = 1
+    
     private var didChange: (MeterReading) -> Void = { (meterReading)  in }
     public var speechTrigger: (_ word: String) -> Void = { arg in } {
         didSet {
             speechRecognition.triggerCallback = speechTrigger
         }
     }
-    public var intensityChange: ((Float) -> Void)?
+//    public var intensityChange: ((Float) -> Void)?
     
-    private var absoluteMinDb: Float = -60.0
-    private var minDb: Float = -60.0
+    // MAY BE ABLE TO MAKE THIS COMPUTED?
+    /// The average reading of quietest readings based on the MeterMinumum struct.
+    private var averageMinimumDecibel: Decibel
+    
     //internal var running = false
     var state: State = .off
     
     public let speechRecognition = SpeechRecognition()
     
     
-    /*
-    private (set) var meterReading: MeterReading? {
-        didSet {
-            guard let meterReading = meterReading
-                else { return }
-            if let intensityChange = intensityChange {
-                intensityChange(meterReading.intensityFast)
-            }
-            let observation = Observation.meter(reading: meterReading)
-            sendToObservers(observation)
-            
-            self.didChange(meterReading)
-        }
-    }
-    */
+    private let intensitySignalInput: Signal<Intensity, Never>.Observer
+    public let intensityProperty: ReactiveSwift.Property<Intensity>
     
     public init(audioEngine: AudioEngineProtocol){
+        
+        let initialIntensity = AudioMeter.defaultIntensity
+        
+        let intensityPipe = Signal<Intensity, Never>.pipe()
+        let intensityProperty = ReactiveSwift.Property(
+            initial: initialIntensity,
+            then: intensityPipe.output
+        )
+        
+        self.averageMinimumDecibel = AudioMeter.defaultMinDb
         self.audioEngine = audioEngine
+        self.intensitySignalInput = intensityPipe.input
+        self.intensityProperty = intensityProperty
+        self.scale = AudioMeter.defaultScale
         //self.changeSlowSpeed(ratio: self.slowSpeed)
         //meter.slowSpeedSeconds = 7
-        meter.fastSpeedSeconds = 2.5
+        meter.speed = 2.5
     }
     
     
@@ -116,52 +97,33 @@ extension AudioMeter {
             let format = format
             else { return }
         
-        
-        
         self.speechRecognition.append(buffer: buffer)
         
-        
-        let avgPower = bufferReading.decibel
-        
-        
-        
-        
-        let meterLevel = volumeRatio(decibel: avgPower)
-        
-        
-        //self.buffer = channelDataValueArray
-        
-        
+        let bufferDecibelReading = bufferReading.decibel
+        let bufferDecibelRatio = decibelRatio(from: bufferDecibelReading)
         
         //better place to calculate only on init and change?
-        let secondsMultiplier = Float(format.sampleRate) / Float(buffer.frameLength)
+        let bufferDuration = Second(
+            format.sampleRate) / Float(buffer.frameLength
+        )
         
+        meter.set(singleReadingDuration: bufferDuration)
+        meter.append(decibelRatio: bufferDecibelRatio)
         
-        meter.setTime(multiplier: secondsMultiplier)
-        meter.append(scaledReading: meterLevel)
+        meterMinimum.append(decibelReading: bufferDecibelReading)
         
-        meterMinimum.append(decibelReading: avgPower)
-        
-        if meterMinimum.average != 0{
-            minDb = meterMinimum.average
+        if meterMinimum.average != 0 {
+            averageMinimumDecibel = meterMinimum.average
         }
         
-        let fastLevel = meter.fastReading * scale
+        let intensity: Intensity = meter.average * scale
         
-        meterMaximum.append(scaledLevel: fastLevel)
+        meterMaximum.append(intensity: intensity)
         
         self.scale = AudioMeter.scale(maximumRatio: meterMaximum.average)
         
-        //let slowLevel = AudioMeter.filter(number: meter.slowReading * scale)
-        
-        self.value = fastLevel
-        
-        /*
-        self.meterReading = MeterReading(
-            intensityFast: fastLevel,
-            intensitySlow: slowLevel
-        )
-        */
+//        self.value = fastLevel
+        self.intensitySignalInput.send(value: intensity)
         
     }
 }
@@ -229,23 +191,11 @@ extension AudioMeter {
     }
  */
     public func reset(){
-        //Order matters, so both are sent on didChange. Can possibly split in to two callbacks?
-        //leadingLevel = 0
-        //level = 0
-        //minTracker.reset()
-        //maxTracker.reset()
-        //trailingLevel.reset()
-        //trailingLevelHalf.reset()
-        
-        //meterReading = nil
-        value = 0
+        self.intensitySignalInput.send(value: AudioMeter.defaultIntensity)
         meterMaximum.reset()
         meterMinimum.reset()
         meter.reset()
-        
-        //newMeter.reset()
-        
-        minDb = -60.0
+        averageMinimumDecibel = AudioMeter.defaultMinDb
     }
     
     // Verify performance regarding escaping!
@@ -254,14 +204,14 @@ extension AudioMeter {
     }
     
     
-    public func set(property: AudioMeter.Property){
+    public func set(property: AudioMeter.AudioMeterProperty){
         switch property {
         case .fastSpeed(let ratio): changeFastSpeed(ratio: ratio)
         //case .slowSpeed(let ratio): changeSlowSpeed(ratio: ratio)
         }
     }
     
-    public func set(properties: [AudioMeter.Property]){
+    public func set(properties: [AudioMeter.AudioMeterProperty]){
         for property in properties {
             set(property: property)
         }
@@ -275,57 +225,49 @@ extension AudioMeter {
         floor: 0.3,
         multiplier: 9.5
     )
-    /*
-    private func changeSlowSpeed(ratio: Float){
-        //self.slowSpeed = speed
-        let filteredSpeed = AudioMeter.filter(number: ratio)
-        //let temp = 0.75 + (filteredSpeed * 19.5)
-        let seconds = AudioMeter.slowTimeRatio.seconds(fromRatio: filteredSpeed)
-        //print(temp == seconds)
-        meter.slowSpeedSeconds = seconds
-    }
- */
+    
     private func changeFastSpeed(ratio: Float){
         let filteredSpeed = AudioMeter.filter(number: ratio)
         let seconds = AudioMeter.fastTimeRatio.seconds(fromRatio: filteredSpeed)
         // better way to do this in ratio??
         let finalSeconds = (seconds > 2.5) ? 2.5 : seconds
-        meter.fastSpeedSeconds = finalSeconds
+        meter.speed = finalSeconds
     }
-    /*
-    var slowSpeed: Float {
-        return AudioMeter.slowTimeRatio.ratio(fromSeconds: meter.slowSpeedSeconds)
-    }
- */
+    
     
     /// The duration of the meter as a ratio of 0 to 1
     public var meterSpeedRatio: Float {
-        return AudioMeter.fastTimeRatio.ratio(fromSeconds: meter.fastSpeedSeconds)
+        return AudioMeter.fastTimeRatio.ratio(fromSeconds: meter.speed)
     }
 }
 
 // MARK: CALCULATIONS
 extension AudioMeter {
-    /// Calculates the scale to multiply raw level ratios by to increase dynamic range.
+    /// Calculates the scale to multiply raw level ratios by to increase dynamic range. Returns a number that can be used to multiply the Decibel ratio by to get a more full range of dynamics.
     static func scale(
-        maximumRatio: Float,
+        maximumRatio: Intensity,
         limit: Float? = 10
-    ) -> Float{
+    ) -> IntensityMultipler {
         let limit = limit ?? 10
         let scale = 1 / maximumRatio
         return (scale > limit) ? limit : scale
     }
     
     /// convert decibel readings to a ratio of 0 to 1
-    private func volumeRatio(decibel: Float) -> Float {
-        return AudioMeter.volumeRatio(decibel: decibel, minimumDB: minDb)
+    private func decibelRatio(
+        from decibel: Decibel
+    ) -> DecibelRatio {
+        return AudioMeter.decibelRatio(
+            from: decibel,
+            minimumDB: averageMinimumDecibel
+        )
     }
     
     /// convert decibel readings to a ratio of 0 to 1
-    static func volumeRatio (
-        decibel: Float,
-        minimumDB: Float
-    ) -> Float {
+    static func decibelRatio (
+        from decibel: Decibel,
+        minimumDB: Decibel
+    ) -> DecibelRatio {
         //Convert decibel to scale of 1
         guard decibel.isFinite
             else { return 0.0 }
@@ -364,29 +306,4 @@ extension AudioMeter {
     }
 }
 
-// MARK: DEFINITIONS
-extension AudioMeter {
-    
-    enum AudioMeterError: ScorepioError {
-        case couldNotStartAlreadyRunning
-        case couldNotStartNoNode
-        
-        var message: String {
-            switch self {
-            case .couldNotStartNoNode: return "Could not start audio meter because there is not a node defined."
-            case .couldNotStartAlreadyRunning: return "Could not start audio meter because it is already running."
-            }
-        }
-    }
-    
-    public enum Property {
-        case fastSpeed(ratio: Float)
-        //case slowSpeed(ratio: Float)
-    }
-    
-    enum State {
-        case running
-        case off
-    }
-}
 

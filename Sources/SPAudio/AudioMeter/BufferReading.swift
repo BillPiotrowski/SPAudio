@@ -9,10 +9,12 @@
 import SPCommon
 import AVFoundation
 
-struct BufferReading {
-    private var absoluteMinDb: Float
-    let channelDataValueArray: [Float]
-    let frameLength: AVAudioFrameCount
+
+/// Takes a buffer reading and calculates the decibel level.
+internal struct BufferReading {
+    internal let absoluteMinDb: Decibel
+    internal let channelDataValueArray: [Float]
+    internal let frameLength: AVAudioFrameCount
     
     init(
         channelDataValueArray: [Float],
@@ -21,7 +23,7 @@ struct BufferReading {
     ){
         self.channelDataValueArray = channelDataValueArray
         self.frameLength = frameLength
-        self.absoluteMinDb = absoluteMinDb ?? -60.0
+        self.absoluteMinDb = absoluteMinDb ?? AudioMeter.defaultMinDb
     }
     
     init(buffer: AVAudioPCMBuffer) throws {
@@ -42,6 +44,61 @@ struct BufferReading {
             frameLength: buffer.frameLength
         )
     }
+}
+    
+// MARK: COMPUTED VARS
+extension BufferReading {
+    private var rms: RootMeanSquare {
+        return BufferReading.rms(
+            fromChannelDataValueArray: channelDataValueArray,
+            frameLength: frameLength
+        )
+    }
+    
+    var decibel: Decibel {
+        return BufferReading.decibel(
+            from: rms,
+            absoluteMinDb: absoluteMinDb
+        )
+    }
+}
+
+
+// MARK: STATIC CALCULATIONS
+extension BufferReading {
+    /// Calculate the root mean square. squares all numbers, sums them, divides by total, and square roots that.
+    private static func rms(
+        fromChannelDataValueArray: [Float],
+        frameLength: AVAudioFrameCount
+    ) -> RootMeanSquare {
+        let rms1 = fromChannelDataValueArray.map{ $0 * $0 }
+        let rms2 = rms1.reduce(0, +)
+        let rms3 = rms2 / Float(frameLength)
+        let rms = sqrt(rms3)
+        return rms
+    }
+    
+    /// Calculate the decibel level
+    /// - Parameters:
+    ///   - fromRMS: the root mean square (quadratic mean) of an array of numbers.
+    ///   - absoluteMinDb: the minimum decibel. If average power is quieter than this reading, absoluteMinDb will be returned.
+    /// - Returns: The decibel calculation (average power).
+    private static func decibel(
+        from rms: RootMeanSquare,
+        absoluteMinDb: Decibel
+    ) -> Decibel{
+        let avgPower = 20 * log10(rms)
+        return (avgPower < absoluteMinDb) ? absoluteMinDb : avgPower
+//        if avgPower < absoluteMinDb {
+//            avgPower = absoluteMinDb
+//        }
+//        //SET MINIMUM DB for return. MAybe -80?
+//        return avgPower
+    }
+}
+
+// MARK: DEFINITIONS
+extension BufferReading {
     
     enum BufferReadingError: ScorepioError {
         case channelDataMissing
@@ -52,38 +109,4 @@ struct BufferReading {
             }
         }
     }
-    
-    var rms: Float {
-        return BufferReading.rms(fromChannelDataValueArray: channelDataValueArray, frameLength: frameLength)
-    }
-    
-    var decibel: Float {
-        return BufferReading.decibel(fromRMS: rms, absoluteMinDb: absoluteMinDb)
-    }
-    
-    /// Calculate the root mean square. squares all numbers, sums them, divides by total, and square roots that.
-    private static func rms(
-        fromChannelDataValueArray: [Float],
-        frameLength: AVAudioFrameCount
-    ) -> Float{
-        let rms1 = fromChannelDataValueArray.map{ $0 * $0 }
-        let rms2 = rms1.reduce(0, +)
-        let rms3 = rms2 / Float(frameLength)
-        let rms = sqrt(rms3)
-        return rms
-    }
-    
-    /// Calculate the decibel level
-    private static func decibel(
-        fromRMS: Float,
-        absoluteMinDb: Float
-    ) -> Float{
-        var avgPower = 20 * log10(fromRMS)
-        if avgPower < absoluteMinDb {
-            avgPower = absoluteMinDb
-        }
-        //SET MINIMUM DB for return. MAybe -80?
-        return avgPower
-    }
-    
 }
