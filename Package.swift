@@ -21,11 +21,11 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/BillPiotrowski/SPCommon.git",
-            from: "0.1.0"
+            Package.Dependency.Requirement.branch("main")
         ),
         .package(
             url: "https://github.com/BillPiotrowski/WPNowPlayable.git",
-            from: "0.1.0"
+            Package.Dependency.Requirement.branch("main")
         ),
         .package(
             url: "https://github.com/AudioKit/AudioKit",
