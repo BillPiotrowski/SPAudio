@@ -29,7 +29,7 @@ public class AudioMeter {
     /// The audio node that is being tapped.
     private var node: AVAudioNode?
     
-    private let meter: DurationMeter
+    private let meter: TimedMeter
     private let meterMinimum = MeterMinimum()
     private let meterMaximum = MeterMaximum()
     private let audioEngine: AudioEngineProtocol
@@ -72,7 +72,7 @@ public class AudioMeter {
             then: intensityPipe.output
         )
         
-        let durationMeter = DurationMeter(speed: speed)
+        let durationMeter = TimedMeter(speed: speed)
         
         self.meter = durationMeter
         self.averageMinimumDecibel = AudioMeter.defaultMinDb
