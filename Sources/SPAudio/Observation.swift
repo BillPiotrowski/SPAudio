@@ -12,8 +12,8 @@ import Foundation
 
 public enum Observation2 {
     case audioSequencer(sequencerState: AudioSequencer.State, deck: AudioSequencer)
-    case audioTransport(transportState: AudioTransportState)
-    case audioPlayer(playerState: AudioPlayer.State)
+//    case audioTransport(transportState: AudioTransportState)
+//    case audioPlayer(playerState: AudioPlayer.State)
     /*
     case playbackEngine(activeDeckState: PlaybackBrain.State)
     case playbackEngineCurrent(playbackItem: PlaybackItem?)

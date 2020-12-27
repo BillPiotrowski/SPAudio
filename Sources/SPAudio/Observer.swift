@@ -13,11 +13,11 @@ public struct Observer2 {
     
     func call(_ observation: Observation2){
         switch observation {
-        case .audioTransport(let transportState):
-            guard let audioTransportObserver = ref as? AudioTransportObserver else {
-                return
-            }
-            audioTransportObserver.audioTransportChanged(transportState)
+//        case .audioTransport(let transportState):
+//            guard let audioTransportObserver = ref as? AudioTransportObserver else {
+//                return
+//            }
+//            audioTransportObserver.audioTransportChanged(transportState)
 
         case .audioSequencer(let sequencerState, let deck):
             guard let audioSequenceObserver = ref as? AudioSequencerObserver else { return }
@@ -44,9 +44,9 @@ public struct Observer2 {
                 queued: playableItem
             )
  */
-        case .audioPlayer(let playerState):
-            guard let audioPlayerObserver = ref as? AudioPlayerObserver else { return }
-            audioPlayerObserver.audioPlayerObservation(playerState)
+//        case .audioPlayer(let playerState):
+//            guard let audioPlayerObserver = ref as? AudioPlayerObserver else { return }
+//            audioPlayerObserver.audioPlayerObservation(playerState)
             /*
         case .cues(let cuesState):
             guard let cuesObserver = ref as? CuesObserver else { return }

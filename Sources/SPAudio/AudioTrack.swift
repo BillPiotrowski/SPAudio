@@ -197,13 +197,13 @@ extension StemPlayer: AudioPlayerTransport{
         return audioPlayer.audioTransportState
     }
     
-    public var observations2: [ObjectIdentifier : Observer2] {
-        get {
-            return audioPlayer.observations2
-        } set (val) {
-            audioPlayer.observations2 = val
-        }
-    }
+//    public var observations2: [ObjectIdentifier : Observer2] {
+//        get {
+//            return audioPlayer.observations2
+//        } set (val) {
+//            audioPlayer.observations2 = val
+//        }
+//    }
     public var transportState: AudioTransportState {
         return audioPlayer.transportState
     }

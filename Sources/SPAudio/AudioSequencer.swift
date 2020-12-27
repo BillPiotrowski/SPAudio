@@ -161,9 +161,10 @@ public class AudioSequencer: Observable2 {
                 return
             }
             
-            let observation = Observation2.audioTransport(transportState: transportState)
+//            let observation = Observation2.audioTransport(transportState: transportState)
+            transportStateInput.send(value: transportState)
             //print("SEND TRANSPORT")
-           sendToObservers2(observation)
+//           sendToObservers2(observation)
         }
     }
     
@@ -419,7 +420,7 @@ extension AudioSequencer: AudioPlayerTransport {
 
 
 
-public protocol AudioSequencerObserver: AudioTransportObserver {
+public protocol AudioSequencerObserver /*: AudioTransportObserver*/ {
     func audioDeckObserver(_ audioDeckState: AudioSequencer.State, deck: AudioSequencer)
 }
 

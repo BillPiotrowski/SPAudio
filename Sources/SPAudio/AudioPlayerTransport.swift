@@ -10,7 +10,7 @@ import SPCommon
 import Foundation
 import ReactiveSwift
 
-public protocol AudioPlayerTransport: Observable2 {
+public protocol AudioPlayerTransport /*: Observable2*/ {
     var audioTransportState: Property<AudioTransportState> { get }
     var transportState: AudioTransportState { get }
     var isPlaying: Bool { get }

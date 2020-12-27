@@ -11,7 +11,7 @@ import AVFoundation
 import AVKit
 import ReactiveSwift
 
-public class AudioPlayer: Observable2 {
+public class AudioPlayer /*: Observable2 */ {
     private let player = AVAudioPlayerNode()
     private let audioEngine: AudioEngineProtocol
     private var engine: AVAudioEngine {
@@ -24,31 +24,38 @@ public class AudioPlayer: Observable2 {
     /// A variable that sets if player will replay audio file after it completes.
     public var loop = true
     
-    private let (transportStateOutput, transportStateInput): (Signal<AudioTransportState, Never>, Signal<AudioTransportState, Never>.Observer)
+    private let transportStateInput: Signal<AudioTransportState, Never>.Observer
     public let audioTransportState: Property<AudioTransportState>
     
     private let audioPlayerStateInput: Signal<AudioPlayer.State, Never>.Observer
     public let audioPlayerStateProperty: Property<AudioPlayer.State>
     
     // EVENTUALLY REMOVE IF POSSIBLE!
-    //internal var observations = [ObjectIdentifier : Observer2]()
-    public var observations2 = [ObjectIdentifier : Observer2]()
+//    public var observations2 = [ObjectIdentifier : Observer2]()
 
-    public var playerState: AudioPlayer.State = .standby {
-        didSet {
-            //print("Player State: \(playerState)")
-            let observation = Observation2.audioPlayer(playerState: playerState)
-            sendToObservers2(observation)
-            self.audioPlayerStateInput.send(value: playerState)
-        }
+    public var playerState: AudioPlayer.State {
+        return audioPlayerStateProperty.value
+    }
+    public var transportState: AudioTransportState {
+        return audioTransportState.value
     }
     
-    public var transportState: AudioTransportState = .stopped {
-        didSet {
-            let observation = Observation2.audioTransport(transportState: transportState)
-            sendToObservers2(observation)
-        }
-    }
+//    public var playerState: AudioPlayer.State = .standby {
+//        didSet {
+//            //print("Player State: \(playerState)")
+//            let observation = Observation2.audioPlayer(playerState: playerState)
+//            sendToObservers2(observation)
+//            self.audioPlayerStateInput.send(value: playerState)
+//        }
+//    }
+    
+//    public var transportState: AudioTransportState = .stopped {
+//        didSet {
+//            let observation = Observation2.audioTransport(transportState: transportState)
+//            sendToObservers2(observation)
+//        }
+//    }
+    
     
     
     public init(
@@ -56,21 +63,24 @@ public class AudioPlayer: Observable2 {
         outputConnectionPoints: [AVAudioConnectionPoint]
     ){
         let initialAudioPlayerState = AudioPlayer.State.standby
-        let signal = Signal<AudioTransportState, Never>.pipe()
-        let property = Property(
-            initial: AudioTransportState.stopped,
-            then: signal.output
+        let intitialTransportState = AudioTransportState.stopped
+        
+        
+        let audioTransportStatePipe = Signal<AudioTransportState, Never>.pipe()
+        let audioTransportStateProperty = Property(
+            initial: intitialTransportState,
+            then: audioTransportStatePipe.output
         )
         let audioPlayerStatePipe = Signal<AudioPlayer.State, Never>.pipe()
         let audioPlayerStateProperty = Property(
             initial: initialAudioPlayerState,
             then: audioPlayerStatePipe.output
         )
+        
         self.audioPlayerStateInput = audioPlayerStatePipe.input
         self.audioPlayerStateProperty = audioPlayerStateProperty
-        self.transportStateInput = signal.input
-        self.transportStateOutput = signal.output
-        self.audioTransportState = property
+        self.transportStateInput = audioTransportStatePipe.input
+        self.audioTransportState = audioTransportStateProperty
         self.audioEngine = audioEngine
         self.outputConnectionPoints = outputConnectionPoints
         self.attach(engine: engine)
@@ -79,7 +89,10 @@ public class AudioPlayer: Observable2 {
     func attach(engine: AVAudioEngine){
         engine.attach(player)
     }
-    
+}
+
+// MARK: CUE / UNCUE
+extension AudioPlayer {
     /// Cues the player with a local audio file url.
     public func cue(_ audioFileURL: URL, autoPlay: Bool = false) throws {
         uncue()
@@ -88,7 +101,8 @@ public class AudioPlayer: Observable2 {
         } catch {
             throw Error.couldNotLoadAudio(url: audioFileURL)
         }
-        playerState = .cued(transport: self)
+        self.audioPlayerStateInput.send(value: .cued(transport: self))
+//        playerState = .cued(transport: self)
         if autoPlay {
             play()
         }
@@ -99,9 +113,13 @@ public class AudioPlayer: Observable2 {
         if (isConnected) { disconnect() }
         audioFile = nil
         self.loop = true
-        playerState = .standby
+        self.audioPlayerStateInput.send(value: .standby)
+//        playerState = .standby
     }
-    
+}
+
+// MARK: CONNECTION
+extension AudioPlayer {
     
     public func connect() throws {
         guard let audioFormat = audioFormat else {
@@ -126,12 +144,19 @@ public class AudioPlayer: Observable2 {
     private var isPlayerConnected: Bool {
         return engine.outputConnectionPoints(for: player, outputBus: 0).count > 0
     }
-    
+}
+
+// MARK: SCHEDULING
+extension AudioPlayer {
     private func scheduleAudioFile() throws {
         guard let audioFile = audioFile else {
             throw Error.scheduleNoAudioFile
         }
-        player.scheduleFile(audioFile, at: nil, completionHandler: audioFileCompletedPlaying)
+        player.scheduleFile(
+            audioFile,
+            at: nil,
+            completionHandler: audioFileCompletedPlaying
+        )
         isScheduled = true
     }
     
@@ -160,7 +185,7 @@ extension AudioPlayer {
 
 
 
-
+// MARK: AudioPlayerTransport
 extension AudioPlayer: AudioPlayerTransport {
     
     public var isPreparedToPlay: Bool {
@@ -188,20 +213,20 @@ extension AudioPlayer: AudioPlayerTransport {
         }
         player.play()
         isScheduled = false
-        transportStateInput.send(value: .playing)
-        transportState = .playing
+        self.transportStateInput.send(value: .playing)
+//        transportState = .playing
     }
     public func stop(){
         player.stop()
         //disconnect()
-        transportState = .stopped
-        transportStateInput.send(value: .stopped)
+//        transportState = .stopped
+        self.transportStateInput.send(value: .stopped)
         isScheduled = false
     }
     public func pause(){
         player.pause()
-        transportState = .paused
-        transportStateInput.send(value: .paused)
+//        transportState = .paused
+        self.transportStateInput.send(value: .paused)
     }
     public func playStopToggle(){
         switch isPlaying {
@@ -214,31 +239,6 @@ extension AudioPlayer: AudioPlayerTransport {
     }
 }
 
-// MARK: DEFINITIONS
-extension AudioPlayer {
-    public enum State {
-        case standby
-        //case loading
-        //case error
-        case cued(transport: AudioPlayerTransport)
-    }
-    
-    enum Error: ScorepioError {
-        case couldNotLoadAudio(url: URL)
-        case connectNoFormat
-        case connectNoOutput
-        case scheduleNoAudioFile
-        
-        var message: String {
-            switch self {
-            case .couldNotLoadAudio(let url): return "Could not load audio file: \(url.relativeString)."
-            case .connectNoFormat: return "Can not connect audio player because there is no audio format."
-            case .connectNoOutput: return "Can not connect audio player because there are no output connection points."
-            case .scheduleNoAudioFile: return "Could not schedule player because audio file is not defined."
-            }
-        }
-    }
-}
 
 
 
@@ -246,24 +246,24 @@ extension AudioPlayer {
 
 
 
-public protocol AudioPlayerObserver: AudioTransportObserver {
-    //func playbackEngineObserver(_ activeDeckState: PlayableState)
-    func audioPlayerObservation(_ playerState: AudioPlayer.State)
-}
-extension AudioPlayerObserver {
-    func audioPlayerObservation(_ playerState: AudioPlayer.State) {}
-}
+//public protocol AudioPlayerObserver: AudioTransportObserver {
+//    //func playbackEngineObserver(_ activeDeckState: PlayableState)
+//    func audioPlayerObservation(_ playerState: AudioPlayer.State)
+//}
+//extension AudioPlayerObserver {
+//    func audioPlayerObservation(_ playerState: AudioPlayer.State) {}
+//}
 
 
 
 
 
 
-public protocol AudioTransportObserver: ObserverClass2 {
-    func audioTransportChanged(_ audioDeckState: AudioTransportState)
-}
-extension AudioTransportObserver {
-    //func audioTransportChanged(_ audioDeckState: AudioTransportState) {}
-}
-
+//public protocol AudioTransportObserver: ObserverClass2 {
+//    func audioTransportChanged(_ audioDeckState: AudioTransportState)
+//}
+//extension AudioTransportObserver {
+//    //func audioTransportChanged(_ audioDeckState: AudioTransportState) {}
+//}
+//
 
