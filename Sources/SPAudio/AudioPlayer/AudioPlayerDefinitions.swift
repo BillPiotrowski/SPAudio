@@ -12,8 +12,6 @@ import SPCommon
 extension AudioPlayer {
     public enum State {
         case standby
-        //case loading
-        //case error
         case cued(transport: AudioPlayerTransport)
     }
     

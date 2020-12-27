@@ -15,110 +15,7 @@ import CoreAudioKit
 import ReactiveSwift
 import SPCommon
 
-/*
-struct MidiDuration {
-    private let samples: Int
-    private let sampleRate: Double
-    private let tempo: Double
-    
-    init(samples: Int, sampleRate: Double, tempo: Double) {
-        self.samples = samples
-        self.sampleRate = sampleRate
-        self.tempo = tempo
-    }
-}
- */
-/*
-protocol MidiDuration {
-    
-    init(samples: Int, sampleRate: Double, tempo: Double)
-}
-extension MidiDuration {
-    /*
-    var akDuration: AKDuration {
-        return AKDuration(samples: samples, sampleRate: sampleRate, tempo: tempo)
-    }
- */
-}
-*/
-/*
-public protocol MidiNoteData {
-    
-}
-extension AKMIDINoteData: MidiNoteData {
-    
-}
-
-protocol MidiSequencer {
-    func preroll()
-    var isPlaying: Bool { get }
-    var trackCount: Int { get }
-    func stop()
-    func play()
-    func setTime(_ timestamp: MusicTimeStamp)
-    func loadMIDIFile(fromURL: URL)
-    var midiTracks: [MidiTrack] { get }
-    //func newTrack()
-    //func newTrack(_ name: String?) -> AKMusicTrack?
-    func createNewTrack() -> MidiTrack?
-    var length: AKDuration { get }
-    func clearRange(start: AKDuration, duration: AKDuration)
-    func setTempo(_: Double)
-    var currentPosition: AKDuration { get }
-}
-protocol MidiTrack {
-    func setMIDIOutput(_ endpointRef: MIDIEndpointRef)
-    func setLoopInfo(_ duration: AKDuration, numberOfLoops: Int)
-    var length: Double { get }
-    func setLength(_ duration: AKDuration)
-    func add(midiNoteData: AKMIDINoteData)
-    func addNote(
-        noteNumber: UInt8,
-        velocity: UInt8,
-        position: MidiDuration,
-        duration: MidiDuration,
-        channel: UInt8
-        /*
-        noteNumber: MIDINoteNumber,
-        velocity: MIDIVelocity,
-        position: AKDuration,
-        duration: AKDuration,
-        channel: MIDIChannel
- */
-    )
-}
-extension AKAppleSequencer: MidiSequencer {
-    func createNewTrack() -> MidiTrack? {
-        return self.newTrack()
-    }
-    
-    
-    var midiTracks: [MidiTrack] {
-        return tracks
-    }
-}
-extension AKMusicTrack: MidiTrack {
-    func addNote(
-        noteNumber: UInt8,
-        velocity: UInt8,
-        position: MidiDuration,
-        duration: MidiDuration,
-        channel: UInt8
-    ) {
-        //let positionDuration = AKDuration(
-        self.add(
-            noteNumber: noteNumber,
-            velocity: velocity,
-            position: position.akDuration,
-            duration: duration.akDuration,
-            channel: channel
-        )
-    }
-    
-    
-}
- */
-public class AudioSequencer: Observable2 {
+public class AudioSequencer /*: Observable2 */{
     private let mainMaster = AVAudioMixerNode()
     private let fxMaster = AVAudioMixerNode()
     private let outputMixer = AVAudioMixerNode()
@@ -135,22 +32,18 @@ public class AudioSequencer: Observable2 {
     public private(set) var isConnected: Bool = false
     
     
-    private let (transportStateOutput, transportStateInput): (Signal<AudioTransportState, Never>, Signal<AudioTransportState, Never>.Observer)
+    private let transportStateInput: Signal<AudioTransportState, Never>.Observer
     public let audioTransportState: Property<AudioTransportState>
+    
+    private let sequencerStateInput: Signal<State, Never>.Observer
+    public let sequencerStateProperty: Property<State>
     
     public let synth: Synth
 
     //var sequenceCartridge: SequenceCartridge?
     //internal var observations: [ObjectIdentifier : Observer4] = [:]
-    public var observations2: [ObjectIdentifier : Observer2] = [:]
+//    public var observations2: [ObjectIdentifier : Observer2] = [:]
     
-    public var sequencerState: AudioSequencer.State = .empty {
-        didSet {
-            let observation = Observation2.audioSequencer(sequencerState: sequencerState, deck: self)
-            //print("SEND audio SEQ")
-            sendToObservers2(observation)
-        }
-    }
     
     // REMOVE THE VARS FROM CLASS THAT ARE STORED IN STATE!!!!
     public var transportState: AudioTransportState = .stopped {
@@ -179,10 +72,19 @@ public class AudioSequencer: Observable2 {
         let fxMixer = AVAudioMixerNode()
         let synth = Synth()
         
+        let initialTransportState = AudioTransportState.stopped
+        let initialSequencerState = State.empty
+        
         let signal = Signal<AudioTransportState, Never>.pipe()
         let property = Property(
-            initial: AudioTransportState.stopped,
+            initial: initialTransportState,
             then: signal.output
+        )
+        
+        let sequencerStateSignal = Signal<State, Never>.pipe()
+        let sequencerStateProperty = Property(
+            initial: initialSequencerState,
+            then: sequencerStateSignal.output
         )
         
         var stemPlayers: [StemPlayer] = []
@@ -191,12 +93,13 @@ public class AudioSequencer: Observable2 {
             stemPlayers.append(stemPlayer)
         }
         
+        self.sequencerStateInput = sequencerStateSignal.input
+        self.sequencerStateProperty = sequencerStateProperty
         self.synth = synth
         self.playerConnectionPoints = [playerConnectionPoint]
         self.fxConnectionPoints = [fxConnectionPoint]
         self.audioEngine = audioEngine
         self.transportStateInput = signal.input
-        self.transportStateOutput = signal.output
         self.audioTransportState = property
         self.stemMixer = stemMixer
         self.fxMixer = fxMixer
@@ -236,7 +139,8 @@ extension AudioSequencer {
             stemPlayer.uncue()
         }
         set(properties: defaults)
-        sequencerState = .empty
+        self.sequencerStateInput.send(value: .empty)
+//        sequencerState = .empty
     }
     
 }
@@ -425,20 +329,6 @@ public protocol AudioSequencerObserver /*: AudioTransportObserver*/ {
 }
 
 
-public protocol AudioSequencerProtocol {
-    var stemPlayers: [StemPlayer] { get }
-    //var sequencer: MidiSequencer? { get }
-    var sequencer: AppleSequencer? { get }
-    var isPlaying: Bool { get }
-    func set(property: AudioSequencer.SettableProperty)
-    func set(properties: [AudioSequencer.SettableProperty])
-    
-    func addObserver2(_ observerClass: ObserverClass2)
-    func removeObserver2(_ observerClass: ObserverClass2)
-    
-    func reset()
-}
-
 extension AudioSequencer: AudioSequencerProtocol {
     public enum SettableProperty {
         case FXSend(volume: Float)
@@ -486,19 +376,12 @@ extension AudioSequencer {
         }
         return activeStemPlayers
     }
-}
-
-
-// MARK: DEFINITIONS
-extension AudioSequencer {
-    public enum State {
-        case empty
-        case ready
-        case loading/*(cue: CueData)*/
-        case cued/*(transport: AudioPlayerTransport/*, trackData: TrackData*/, tracks: [StemPlayer], sectionIndex: Int, cue: CueData)*/
-        case error
+    
+    public var sequencerState: AudioSequencer.State {
+        return sequencerStateProperty.value
     }
 }
+
 
 
 

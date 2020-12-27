@@ -9,6 +9,8 @@ import Foundation
 import AVFoundation
 import SPCommon
 
+// ENTIRE CONTENT WAS CREATED FOR UNIT TESTING
+
 extension AudioEngine {
     /// Creates a noise signal in the form of an array of Doubles. Primarily used for unit testing.
     internal static func createNoise(length: Int) -> [Double] {
