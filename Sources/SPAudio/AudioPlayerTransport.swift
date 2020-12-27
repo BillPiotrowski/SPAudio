@@ -10,6 +10,8 @@ import SPCommon
 import Foundation
 import ReactiveSwift
 
+// PLAY SHOULD THROW??
+
 public protocol AudioPlayerTransport /*: Observable2*/ {
     var audioTransportState: Property<AudioTransportState> { get }
     var transportState: AudioTransportState { get }

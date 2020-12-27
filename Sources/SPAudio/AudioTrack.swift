@@ -98,7 +98,7 @@ extension /*AudioSequencer.*/StemPlayer {
         properties: [StemPlayer.SettableProperty],
         pitchModulation: Bool = false
     ) throws {
-        try audioPlayer.cue(audioURL)
+        try audioPlayer.load(audioURL)
         set(properties: properties)
         self.pitchModulation = pitchModulation
         audioTrackState = .cued
@@ -107,7 +107,7 @@ extension /*AudioSequencer.*/StemPlayer {
         if isConnected {
             disconnect()
         }
-        audioPlayer.uncue()
+        audioPlayer.unload()
         revertToDefault()
         audioTrackState = .empty
     }
@@ -225,7 +225,7 @@ extension StemPlayer: AudioPlayerTransport{
                 print("AUDIO PLAYER ERROR: \(error)")
             }
         }
-        audioPlayer.play()
+        try? audioPlayer.play()
     }
     
     public func stop() {

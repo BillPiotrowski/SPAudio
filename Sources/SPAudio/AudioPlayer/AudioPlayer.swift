@@ -8,19 +8,15 @@
 
 import SPCommon
 import AVFoundation
-import AVKit
 import ReactiveSwift
 
-public class AudioPlayer /*: Observable2 */ {
-    private let player = AVAudioPlayerNode()
+public class AudioPlayer {
+    internal let avAudioPlayerNode = AVAudioPlayerNode()
     private let audioEngine: AudioEngineProtocol
-    private var engine: AVAudioEngine {
-        return audioEngine.engine
-    }
     private let outputConnectionPoints: [AVAudioConnectionPoint]
-    private var audioFile: AVAudioFile? = nil
-    private var connected: Bool = false
-    private var isScheduled = false
+    internal private(set) var audioFile: AVAudioFile? = nil
+    public private(set) var isConnected: Bool = false
+    internal private(set) var isScheduled = false
     /// A variable that sets if player will replay audio file after it completes.
     public var loop = true
     
@@ -29,32 +25,7 @@ public class AudioPlayer /*: Observable2 */ {
     
     private let audioPlayerStateInput: Signal<AudioPlayer.State, Never>.Observer
     public let audioPlayerStateProperty: Property<AudioPlayer.State>
-    
-    // EVENTUALLY REMOVE IF POSSIBLE!
-//    public var observations2 = [ObjectIdentifier : Observer2]()
 
-    public var playerState: AudioPlayer.State {
-        return audioPlayerStateProperty.value
-    }
-    public var transportState: AudioTransportState {
-        return audioTransportState.value
-    }
-    
-//    public var playerState: AudioPlayer.State = .standby {
-//        didSet {
-//            //print("Player State: \(playerState)")
-//            let observation = Observation2.audioPlayer(playerState: playerState)
-//            sendToObservers2(observation)
-//            self.audioPlayerStateInput.send(value: playerState)
-//        }
-//    }
-    
-//    public var transportState: AudioTransportState = .stopped {
-//        didSet {
-//            let observation = Observation2.audioTransport(transportState: transportState)
-//            sendToObservers2(observation)
-//        }
-//    }
     
     
     
@@ -83,38 +54,57 @@ public class AudioPlayer /*: Observable2 */ {
         self.audioTransportState = audioTransportStateProperty
         self.audioEngine = audioEngine
         self.outputConnectionPoints = outputConnectionPoints
+        
         self.attach(engine: engine)
     }
-    
-    func attach(engine: AVAudioEngine){
-        engine.attach(player)
+}
+
+// MARK: ATTACH
+extension AudioPlayer {
+    private func attach(engine: AVAudioEngine){
+        engine.attach(avAudioPlayerNode)
     }
 }
 
 // MARK: CUE / UNCUE
 extension AudioPlayer {
+    @available(*, deprecated, renamed: "load")
+    public func cue(
+        _ audioFileURL: URL, autoPlay: Bool = false
+    ) throws {
+        return try self.load(audioFileURL, autoPlay: autoPlay)
+    }
+    
     /// Cues the player with a local audio file url.
-    public func cue(_ audioFileURL: URL, autoPlay: Bool = false) throws {
-        uncue()
+    public func load(
+        _ audioFileURL: URL,
+        autoPlay: Bool? = nil
+    ) throws {
+        let autoPlay = autoPlay ?? false
+        unload()
         do {
             audioFile = try AVAudioFile(forReading: audioFileURL)
         } catch {
             throw Error.couldNotLoadAudio(url: audioFileURL)
         }
         self.audioPlayerStateInput.send(value: .cued(transport: self))
-//        playerState = .cued(transport: self)
         if autoPlay {
-            play()
+            try? play()
         }
     }
     
+    @available(*, deprecated, renamed: "unload")
     public func uncue(){
+        return self.unload()
+    }
+    
+    /// Stops playback, disconnects and removes any audiofile that has been loaded. Sets state to standby.
+    public func unload(){
         if (isPlaying) { stop() }
         if (isConnected) { disconnect() }
         audioFile = nil
         self.loop = true
         self.audioPlayerStateInput.send(value: .standby)
-//        playerState = .standby
     }
 }
 
@@ -126,33 +116,38 @@ extension AudioPlayer {
             throw Error.connectNoFormat
         }
         let filteredOutputConnectionPoints = try AVAudioConnectionPoint.connectable(outputConnectionPoints)
-        engine.connect(player, to: filteredOutputConnectionPoints, fromBus: 0, format: audioFormat)
-        connected = checkConnection()
+        engine.connect(
+            avAudioPlayerNode,
+            to: filteredOutputConnectionPoints,
+            fromBus: 0,
+            format: audioFormat
+        )
+        self.isConnected = self.outputIsConnected
     }
     
     public func disconnect(){
         if isPlaying {
-            player.stop()
+            avAudioPlayerNode.stop()
         }
-        engine.disconnectNodeOutput(player)
-        connected = checkConnection()
+        engine.disconnectNodeOutput(avAudioPlayerNode)
+        self.isConnected = self.outputIsConnected
     }
     
-    private func checkConnection() -> Bool {
-        return isPlayerConnected
-    }
-    private var isPlayerConnected: Bool {
-        return engine.outputConnectionPoints(for: player, outputBus: 0).count > 0
+    private var outputIsConnected: Bool {
+        return engine.outputConnectionPoints(
+            for: avAudioPlayerNode,
+            outputBus: 0
+        ).count > 0
     }
 }
 
 // MARK: SCHEDULING
 extension AudioPlayer {
-    private func scheduleAudioFile() throws {
+    internal func scheduleAudioFile() throws {
         guard let audioFile = audioFile else {
             throw Error.scheduleNoAudioFile
         }
-        player.scheduleFile(
+        avAudioPlayerNode.scheduleFile(
             audioFile,
             at: nil,
             completionHandler: audioFileCompletedPlaying
@@ -162,32 +157,14 @@ extension AudioPlayer {
     
     private func audioFileCompletedPlaying(){
         if loop && transportState == .playing {
-            play()
+            try? play()
         }
     }
 }
 
-// MARK: CALCULATED VARS
-extension AudioPlayer {
-    public var isConnected: Bool {
-        return connected
-    }
-    public var node: AVAudioNode {
-        return player
-    }
-    public var audioFormat: AVAudioFormat? {
-        return audioFile?.processingFormat
-    }
-    var url: URL? {
-        return audioFile?.url
-    }
-}
-
-
 
 // MARK: AudioPlayerTransport
 extension AudioPlayer: AudioPlayerTransport {
-    
     public var isPreparedToPlay: Bool {
         guard isConnected else { return false }
         return isScheduled
@@ -196,74 +173,64 @@ extension AudioPlayer: AudioPlayerTransport {
         if !isConnected { try connect() }
         if !isScheduled { try scheduleAudioFile() }
     }
-    public func play(){
+    public func play() throws {
         if !isPreparedToPlay {
-            do {
-                try prepareToPlay()
-            } catch {
-                print("AUDIO PLAYER ERROR: \(error)")
-            }
+            try prepareToPlay()
         }
         if !audioEngine.isRunning {
-            do {
-                try audioEngine.start()
-            } catch {
-                print("COULD NOT START ENGINE: \(error)")
-            }
+            try audioEngine.start()
         }
-        player.play()
+        avAudioPlayerNode.play()
         isScheduled = false
         self.transportStateInput.send(value: .playing)
-//        transportState = .playing
     }
     public func stop(){
-        player.stop()
-        //disconnect()
-//        transportState = .stopped
+        avAudioPlayerNode.stop()
         self.transportStateInput.send(value: .stopped)
         isScheduled = false
     }
     public func pause(){
-        player.pause()
-//        transportState = .paused
+        avAudioPlayerNode.pause()
         self.transportStateInput.send(value: .paused)
     }
     public func playStopToggle(){
         switch isPlaying {
         case true: stop()
-        case false: play()
+        case false: try? play()
         }
     }
     public var isPlaying: Bool {
-        return player.isPlaying
+        return avAudioPlayerNode.isPlaying
     }
 }
 
 
 
+// MARK: CALCULATED VARS
+extension AudioPlayer {
+    @available(*, deprecated, message: "This is going to be made internal.")
+    public var node: AVAudioNode {
+        return avAudioPlayerNode
+    }
+    
+    /// The format of the audioFile if one has been successfully loaded.
+    public var audioFormat: AVAudioFormat? {
+        return audioFile?.processingFormat
+    }
+    var url: URL? {
+        return audioFile?.url
+    }
+    
+    public var playerState: AudioPlayer.State {
+        return audioPlayerStateProperty.value
+    }
+    public var transportState: AudioTransportState {
+        return audioTransportState.value
+    }
+    private var engine: AVAudioEngine {
+        return audioEngine.engine
+    }
+}
 
 
-
-
-
-//public protocol AudioPlayerObserver: AudioTransportObserver {
-//    //func playbackEngineObserver(_ activeDeckState: PlayableState)
-//    func audioPlayerObservation(_ playerState: AudioPlayer.State)
-//}
-//extension AudioPlayerObserver {
-//    func audioPlayerObservation(_ playerState: AudioPlayer.State) {}
-//}
-
-
-
-
-
-
-//public protocol AudioTransportObserver: ObserverClass2 {
-//    func audioTransportChanged(_ audioDeckState: AudioTransportState)
-//}
-//extension AudioTransportObserver {
-//    //func audioTransportChanged(_ audioDeckState: AudioTransportState) {}
-//}
-//
 
