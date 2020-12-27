@@ -13,7 +13,7 @@ import Foundation
 // Then create a timer that empties and analyzes the buffer.
 
 /// Caclulates the average decibelRatio over the last x amount of seconds.
-class DurationMeter {
+class TimedMeter {
     /// The maximum capacity of the array. Anything added beyond this number, regardless of the speed will be removed.
     private static let totalCapacity: ArrayLength = 100
     
@@ -30,16 +30,16 @@ class DurationMeter {
     init(
         speed: Second? = nil
     ){
-        self.speed = DurationMeter.defaultSpeed
+        self.speed = TimedMeter.defaultSpeed
     }
     
 }
 
 // MARK: INTERNAL METHODS AND PROPERTIES
-extension DurationMeter {
+extension TimedMeter {
     /// The average decibel ratio over the speed of meter.
     internal var average: AudioMeter.DecibelRatio {
-        let meterReading = SingleMeterReading(
+        let meterReading = MeterReadingArray(
             meterArray: arraySubsetBasedOnSpeed
         )
         return meterReading.average
@@ -48,7 +48,7 @@ extension DurationMeter {
     /// Add a new meter reading.
     internal func append(decibelRatio: AudioMeter.DecibelRatio){
         scaledReadings.insert(decibelRatio, at: 0)
-        let extraReadingsCount = scaledReadings.count - DurationMeter.totalCapacity
+        let extraReadingsCount = scaledReadings.count - TimedMeter.totalCapacity
         if extraReadingsCount > 0 {
             scaledReadings.removeLast(extraReadingsCount)
         }
@@ -69,7 +69,7 @@ extension DurationMeter {
 }
 
 // MARK: HELPER VAR
-extension DurationMeter {
+extension TimedMeter {
     /// Subset of the scaledReadings array based on the set speed.
     private var arraySubsetBasedOnSpeed: [AudioMeter.DecibelRatio] {
         return Array(scaledReadings[0..<arrayLengthFromSpeed])
@@ -77,10 +77,10 @@ extension DurationMeter {
 }
 
 // MARK: INTERNAL CALCULATIONS
-extension DurationMeter {
+extension TimedMeter {
     /// Calculates the length of the array based on the speed that is set.
     private var arrayLengthFromSpeed: ArrayLength {
-        return DurationMeter.arrayLengthFromSpeed(
+        return TimedMeter.arrayLengthFromSpeed(
             meterSpeed: speed,
             readingDuration: singleReadingDuration,
             maximumCapacity: scaledReadings.count

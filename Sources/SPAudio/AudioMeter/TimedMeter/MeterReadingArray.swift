@@ -9,7 +9,7 @@
 import Foundation
 
 /// An enclusure that calculates the average
-internal struct SingleMeterReading {
+internal struct MeterReadingArray {
     private let meterArray: [Float]
     
     init(meterArray: [Float]){
