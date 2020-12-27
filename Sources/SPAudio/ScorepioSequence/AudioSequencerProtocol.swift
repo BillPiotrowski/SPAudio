@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import ReactiveSwift
+import AudioKit
 
 // USED TO PROTECT AudioSequencer from being manipulated. Can possibly use private / internal and eliminate this protocol?
 public protocol AudioSequencerProtocol {
