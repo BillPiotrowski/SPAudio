@@ -8,7 +8,8 @@
 
 import Foundation
 
-struct SingleMeterReading {
+/// An enclusure that calculates the average
+internal struct SingleMeterReading {
     private let meterArray: [Float]
     
     init(meterArray: [Float]){
@@ -26,7 +27,7 @@ struct SingleMeterReading {
     }
     
     /// The average of all of the readings in meter array.
-    var level: Float {
+    var average: Float {
         guard arrayCount > 0
             else { return 0 }
         return sum / arrayCount

@@ -21,14 +21,14 @@ class DurationMeter {
     private var scaledReadings = [AudioMeter.DecibelRatio]()
     
     /// The duration that is used to determine the average. i.e. a 2.5 speed will average all of the readings over the most recent 2.5 seconds.
-    var speed: AudioMeter.Second
-    static let defaultSpeed: AudioMeter.Second = 2.5
+    var speed: Second
+    static let defaultSpeed: Second = 2.5
     
     /// The duration of each single reading
-    private var singleReadingDuration: AudioMeter.Second = 0.1
+    private var singleReadingDuration: Second = 0.1
     
     init(
-        speed: AudioMeter.Second? = nil
+        speed: Second? = nil
     ){
         self.speed = DurationMeter.defaultSpeed
     }
@@ -42,7 +42,7 @@ extension DurationMeter {
         let meterReading = SingleMeterReading(
             meterArray: arraySubsetBasedOnSpeed
         )
-        return meterReading.level
+        return meterReading.average
     }
     
     /// Add a new meter reading.
@@ -61,7 +61,7 @@ extension DurationMeter {
     
     /// Sets the length of a single reading. This is used to calculate how many readings will be averaged based on the speed of the meter.
     internal func set(
-        singleReadingDuration: AudioMeter.Second
+        singleReadingDuration: Second
     ){
         self.singleReadingDuration = singleReadingDuration
     }
@@ -89,8 +89,8 @@ extension DurationMeter {
     
     /// Calculates the length of the array based on the speed that is set.
     private static func arrayLengthFromSpeed(
-        meterSpeed: AudioMeter.Second,
-        readingDuration: AudioMeter.Second,
+        meterSpeed: Second,
+        readingDuration: Second,
         maximumCapacity: ArrayLength
     ) -> ArrayLength {
         let fastArrayCount = Int(meterSpeed * readingDuration)

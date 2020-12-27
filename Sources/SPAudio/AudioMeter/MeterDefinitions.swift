@@ -34,6 +34,9 @@ internal typealias RootMeanSquare = Float
 /// The number of elements in an array. An integer.
 internal typealias ArrayLength = Int
 
+/// Duration of time measured in seconds.
+public typealias Second = Float
+
 
 
 // MARK: SCOREPIO METER DEFINITIONS
@@ -46,10 +49,7 @@ extension AudioMeter {
     
     /// A ratio of a decibel reading between 0 and 1. Absolute minimum Decibel level must be provided to calculate
     typealias DecibelRatio = Float
-    
-    /// Duration in seconds.
-    typealias Second = Float
-    
+        
 }
 
 // MARK: DEFINITIONS
@@ -68,7 +68,7 @@ extension AudioMeter {
     }
     
     public enum AudioMeterProperty {
-        case fastSpeed(ratio: Float)
+        case speed(ratio: MeterTimeRatio.Ratio)
         //case slowSpeed(ratio: Float)
     }
     
