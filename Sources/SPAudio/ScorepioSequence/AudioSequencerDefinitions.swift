@@ -11,7 +11,7 @@ import Foundation
 extension AudioSequencer {
     public enum State {
         case empty
-//        case ready
+        case ready
         //case loading
         case cued
 //        case error

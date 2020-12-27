@@ -378,7 +378,12 @@ extension AudioSequencer {
     }
     
     public var sequencerState: AudioSequencer.State {
-        return sequencerStateProperty.value
+        get {
+            return sequencerStateProperty.value
+        }
+        set {
+            self.sequencerStateInput.send(value: newValue)
+        }
     }
 }
 
