@@ -42,6 +42,11 @@ final class ScorepioSequenceStemTests: XCTestCase {
         )
     }
     
+    // MARK: TEAR DOWN
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: self.testFileURL)
+    }
+    
     // MARK: TEST INIT
     func testInit(){
         // ACT

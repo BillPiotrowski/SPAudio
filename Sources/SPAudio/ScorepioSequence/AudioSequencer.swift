@@ -16,21 +16,36 @@ import ReactiveSwift
 import SPCommon
 
 public class AudioSequencer /*: Observable2 */{
-    private let mainMaster = AVAudioMixerNode()
-    private let fxMaster = AVAudioMixerNode()
-    private let outputMixer = AVAudioMixerNode()
-    private let stemMixer: AVAudioMixerNode
-    private let fxMixer: AVAudioMixerNode
+    /// Final mixerNode before output.
+    internal let mainMaster = AVAudioMixerNode()
+    
+    // Also where the synth fx should go??
+    /// MixerNode that combines stemFXMixer to a new signal. This is sent to the sequencer output fxConnectionPoints.
+    internal let fxMaster = AVAudioMixerNode()
+    
+    /// MixerNode that combines the stemMixer with the synthNode output. Sent to the mainMaster.
+    internal let outputMixer = AVAudioMixerNode()
+    
+    /// MixerNode that combines all stem outputs into a single signal and sends to outputMixer
+    internal let stemMixer: AVAudioMixerNode
+    
+    /// MixerNode that combines all stem fx sends into one signal.
+    internal let stemFXMixer: AVAudioMixerNode
+    
     private let playerConnectionPoints: [AVAudioConnectionPoint]
     private let fxConnectionPoints: [AVAudioConnectionPoint]
     private let audioEngine: AudioEngineProtocol
-    private let tracks: Int = 9
-    private let privateStemPlayers: [StemPlayer]
-    private var privateSequencer: AppleSequencer?
-    //private var privateSequencer: MidiSequencer?
     
+    public static let trackCount: Int = 9
+    public static let usesSynthDefault: Bool = false
+    public static let masterVolumeDefault: Volume = 1
+    
+    public let stemPlayers: [StemPlayer]
+    internal private(set) var activeStemPlayers: [StemPlayer] = []
+    // WHY IS THIS OPTIONAL??
+    public private(set) var sequencer: AppleSequencer
     public private(set) var isConnected: Bool = false
-    
+    public private(set) var usesSynth: Bool
     
     private let transportStateInput: Signal<AudioTransportState, Never>.Observer
     public let audioTransportState: Property<AudioTransportState>
@@ -39,35 +54,12 @@ public class AudioSequencer /*: Observable2 */{
     public let sequencerStateProperty: Property<State>
     
     public let synth: Synth
-
-    //var sequenceCartridge: SequenceCartridge?
-    //internal var observations: [ObjectIdentifier : Observer4] = [:]
-//    public var observations2: [ObjectIdentifier : Observer2] = [:]
-    
-    
-    // REMOVE THE VARS FROM CLASS THAT ARE STORED IN STATE!!!!
-    public var transportState: AudioTransportState = .stopped {
-        didSet {
-            guard transportState != oldValue
-            else {
-                print("duplicate transport command")
-                return
-            }
-            
-//            let observation = Observation2.audioTransport(transportState: transportState)
-            transportStateInput.send(value: transportState)
-            //print("SEND TRANSPORT")
-//           sendToObservers2(observation)
-        }
-    }
     
     public init(
         audioEngine: AudioEngineProtocol,
         playerConnectionPoint: AVAudioConnectionPoint,
         fxConnectionPoint: AVAudioConnectionPoint
-        //conductorTrackCallbackInstrument: AKMIDICallbackInstrument
     ){
-        //self.conductorTrackCallbackInstrument = conductorTrackCallbackInstrument
         let stemMixer = AVAudioMixerNode()
         let fxMixer = AVAudioMixerNode()
         let synth = Synth()
@@ -87,14 +79,18 @@ public class AudioSequencer /*: Observable2 */{
             then: sequencerStateSignal.output
         )
         
-        var stemPlayers: [StemPlayer] = []
-        for i in 0..<tracks{
-            let stemPlayer = StemPlayer(audioEngine: audioEngine, outputConnectionPoints: [AVAudioConnectionPoint(node: stemMixer, bus: i+tracks)], fxConnectionPoints: [AVAudioConnectionPoint(node: fxMixer, bus: i+tracks)])
-            stemPlayers.append(stemPlayer)
-        }
+        let stemPlayers = AudioSequencer.stemPlayers(
+            from: AudioSequencer.trackCount,
+            audioEngine: audioEngine,
+            outputMixer: stemMixer,
+            fxMixer: fxMixer
+        )
+        
+        let sequencer = AppleSequencer()
         
         self.sequencerStateInput = sequencerStateSignal.input
         self.sequencerStateProperty = sequencerStateProperty
+        self.sequencer = sequencer
         self.synth = synth
         self.playerConnectionPoints = [playerConnectionPoint]
         self.fxConnectionPoints = [fxConnectionPoint]
@@ -102,10 +98,12 @@ public class AudioSequencer /*: Observable2 */{
         self.transportStateInput = signal.input
         self.audioTransportState = property
         self.stemMixer = stemMixer
-        self.fxMixer = fxMixer
-        self.privateStemPlayers = stemPlayers
+        self.stemFXMixer = fxMixer
+        self.stemPlayers = stemPlayers
+        self.usesSynth = AudioSequencer.usesSynthDefault
         
         attach()
+        self.reset()
         //synth.connect(to: audioEngine.outputMixer)
     }
 }
@@ -115,85 +113,92 @@ extension AudioSequencer {
     func attach(){
         engine.attach(outputMixer)
         engine.attach(stemMixer)
-        engine.attach(fxMixer)
+        engine.attach(stemFXMixer)
         engine.attach(mainMaster)
         engine.attach(fxMaster)
         engine.attach(synth.avAudioNode)
-        
     }
 }
 
-// MARK: RESET
+// MARK: LOAD / RESET
 extension AudioSequencer {
+    // Could create a function: prepare() -> (Sequencer, [StemPlayer], etc.) to provide the cartridge all of the required properties and then have it call: prepareComplete(Sequencer: activeStemPlayers, etc.) to more solidly lock in loading.
+    
+    /// Allows sequencer to know that loading is complete and ready to begin using and changes state to .cued. Sets active stem players. Stem players should not be loaded or unloaded once this function has been called because it can cause connection errors.
+    public func loadingComplete(usesSynth: Bool? = nil){
+        self.usesSynth = usesSynth ?? AudioSequencer.usesSynthDefault
+        self.activeStemPlayers = AudioSequencer.activeStemPlayers(
+            from: self.stemPlayers
+        )
+        self.masterVolume = AudioSequencer.masterVolumeDefault
+        self.sequencerStateInput.send(value: .cued)
+    }
+    
     public func reset() {
+        if self.isPlaying {
+            self.stop()
+        }
         if isConnected {
             disconnect()
         }
-        //for i in 0..<privateSequencer.trackCount {
-        //    privateSequencer.deleteTrack(trackIndex: i)
-        //}
+        self.usesSynth = AudioSequencer.usesSynthDefault
         
-        self.privateSequencer = AppleSequencer()
-        //self.sequenceCartridge = nil
+        // CLEAR PREVIOUS SEQ?
+        self.sequencer = AppleSequencer()
+        
         for stemPlayer in activeStemPlayers {
             stemPlayer.unload()
         }
-        set(properties: defaults)
+        self.activeStemPlayers = []
+        
+        set(properties: AudioSequencer.defaultSettings.properties)
         self.sequencerStateInput.send(value: .empty)
-//        sequencerState = .empty
     }
-    
 }
 
 // MARK: CONNECT
 extension AudioSequencer {
     func connect() throws {
-        print("START CONNECT SEQ")
-        //synth.connect(to: audioEngine.outputMixer)
-        //print("SEQ SYNTH CONNECT 1: \(synth.avAudioNode.isOutputConnected)")
-        //outputMixer.connect(input: synth.avAudioNode, bus: 2, format: nil)
+        guard !isConnected else {
+            throw NSError(domain: "Trying to connect, but already connected", code: 1, userInfo: nil)
+        }
         
-        
-        
-        
-        engine.connect(synth.avAudioNode, to: outputMixer, fromBus: 0, toBus: 2, format: nil)
-        
-        
-        
-        
-        
-        //synth.avAudioNode.connect(input: outputMixer, bus: 2)
-        //synth.avA
-        //synth.avAudioNode.numberOfOutputs
-        //synth.avAudioUnit?.connect(input: outputMixer, bus: 2, format: nil)
-        //let tempMixer = Mixer()
-        //tempMixer.addInput(synth)
-        //print("SEQ SYNTH CONNECT 2: \(synth.avAudioNode.isOutputConnected)")
-        //synth.connect(to: AVAudioConnectionPoint(node: outputMixer, bus: 2))
-        // BETTER WAY TO DO THIS??? BACKUP DEFAULT SETTING???
+        // MAKE SURE EVERYTHING IS DISCONNECTED?? MAY NOT BE NECESSARY
+        self.disconnect()
+        // BETTER WAY TO HANDLE audioFormat?
         let audioFormat = stemPlayers[0].audioFormat ?? synth.avAudioNode.outputFormat(forBus: 0)
         
-        
-        
+        if self.usesSynth {
+            engine.connect(
+                synth.avAudioNode,
+                to: outputMixer,
+                fromBus: 0,
+                toBus: 2,
+                format: audioFormat
+            )
+        }
         
         //ORDER IS IMPORTANT. PUTTING STEMS AFTER MIXER WILL BREAK WITH PITCH AUDIO UNIT!!!!!
         for stemPlayer in activeStemPlayers {
             try stemPlayer.connect()
         }
-        let fxOut = try AVAudioConnectionPoint.connectable(fxConnectionPoints)
-        let outPoints = try AVAudioConnectionPoint.connectable(playerConnectionPoints)
+        let connectableFXOuts = try AVAudioConnectionPoint.connectable(
+            fxConnectionPoints
+        )
+        let connectableOuts = try AVAudioConnectionPoint.connectable(
+            playerConnectionPoints
+        )
         
-        try engine.connect(from: fxMixer, to: fxMaster, fromBus: 0, toBus: 0, format: audioFormat)
+        try engine.connect(from: stemFXMixer, to: fxMaster, fromBus: 0, toBus: 0, format: audioFormat)
         engine.connect(stemMixer, to: outputMixer, fromBus: 0, toBus: 0, format: audioFormat)
         engine.connect(outputMixer, to: mainMaster, fromBus: 0, toBus: 0, format: audioFormat)
         
-        engine.connect(fxMaster, to: fxOut, fromBus: 0, format: audioFormat)
-        engine.connect(mainMaster, to: outPoints, fromBus: 0, format: audioFormat)
-        //AudioKit.connect(synth.outputNode, to: audioEngine.outputMixer.avAudioNode, format: audioFormat)
-        isConnected = checkConnection()
-        print("SEQ IS CONNECTED: \(isConnected)")
-            print("END CONNECT SEQ")
+        engine.connect(fxMaster, to: connectableFXOuts, fromBus: 0, format: audioFormat)
+        engine.connect(mainMaster, to: connectableOuts, fromBus: 0, format: audioFormat)
+        self.isConnected = checkConnection()
+        // SHOULD DISCONNECT IF ONE IS FALSE??
     }
+    
     public func disconnect(){
         if isPlaying {
             stop()
@@ -201,30 +206,32 @@ extension AudioSequencer {
         for stemPlayer in activeStemPlayers {
             stemPlayer.disconnect()
         }
-        engine.disconnectNodeOutput(synth.avAudioNode)
-        engine.disconnectNodeOutput(fxMixer)
+        if synth.avAudioNode.isOutputConnected {
+            engine.disconnectNodeOutput(synth.avAudioNode)
+        }
+        engine.disconnectNodeOutput(stemFXMixer)
         engine.disconnectNodeOutput(stemMixer)
         engine.disconnectNodeOutput(outputMixer)
         engine.disconnectNodeOutput(mainMaster)
         engine.disconnectNodeOutput(fxMaster)
-        engine.disconnectNodeInput(outputMixer)
-        //synth.avAudioNode.disconnect(input: outputMixer)
-        //synth.disconnectOutput()
-        isConnected = checkConnection()
+        // NOT SURE THIS IS NECESSARY?
+        //engine.disconnectNodeInput(outputMixer)
+        self.isConnected = checkConnection()
     }
     
     
     //Maybe just make this a variable that is changed when connected / disconnected instead of checking manually?
     func checkConnection() -> Bool{
-        guard fxMixer.isOutputConnected,
+        guard stemFXMixer.isOutputConnected,
             stemMixer.isOutputConnected,
             outputMixer.isOutputConnected,
             fxMaster.isOutputConnected,
             mainMaster.isOutputConnected
             else {
-                print("NOT CONNECTED")
                 return false
-                
+        }
+        if self.usesSynth && !synth.avAudioNode.isOutputConnected {
+            return false
         }
         for stemPlayer in activeStemPlayers {
             guard stemPlayer.isConnected else { return false }
@@ -233,19 +240,6 @@ extension AudioSequencer {
     }
 }
 
-// MARK: VOLUME
-extension AudioSequencer {
-    /// Controls the master volume for the sequencer. Should not be altered by cartridges. Put in place to allow crossfades between tracks.
-    public var masterVolume: Float {
-        get {
-            return mainMaster.outputVolume
-        } set (newMasterVolume){
-            //print("master volume: \(newMasterVolume)")
-            mainMaster.outputVolume = newMasterVolume
-            fxMaster.outputVolume = newMasterVolume
-        }
-    }
-}
 
     
     // ADD PROTECTION TO MAKE SURE IT IS CUED??
@@ -261,64 +255,39 @@ extension AudioSequencer: AudioPlayerTransport {
         if !audioEngine.isRunning {
             try audioEngine.start()
         }
-        sequencer?.preroll()
+        sequencer.preroll()
     }
     public func playStopToggle(){
         guard isPlaying else {
-            play()
+            try? play()
             return
         }
         stop()
     }
     
     public var isPlaying: Bool {
-        return sequencer?.isPlaying ?? false
+        return sequencer.isPlaying
     }
     public func stop(){
         guard transportState != .stopped else {
             return
         }
-        sequencer?.stop()
+        sequencer.stop()
         for stemPlayer in activeStemPlayers {
             stemPlayer.stop()
         }
-        sequencer?.setTime(MusicTimeStamp(exactly: 0.0)!)
-        transportState = .stopped
+        sequencer.setTime(MusicTimeStamp(exactly: 0.0)!)
         transportStateInput.send(value: .stopped)
     }
     public func pause(){
-        // PAUSE PROBABLY DOESN'T WORK IN THIS SITUATION??? WOULD BE DELAY BEFORE NOTES ARE RETRIGGERED AND THEY WON't LINEUP AT NEXT MEASURE.
         stop()
     }
-    public func play(){
-        // DONT CHECK SO THAT PREROLL HAPPENS REGARDLESS
-        //if !isPreparedToPlay {
-        //print("PLAY ATTEMPT SEQ")
-        
-        do {
-            if !isPreparedToPlay {
-                try prepareToPlay()
-            }
-            sequencer?.play()
-            //print("PLAYING: \(isPlaying)")
-            transportState = .playing
-            transportStateInput.send(value: .playing)
-        } catch {
-            //audioEngine.stopIfNotRunning()
-        }
-        /*
-        do {
+    public func play() throws {
+        if !isPreparedToPlay {
             try prepareToPlay()
-        } catch {
-            print(error)
         }
-        //}
-        if isPreparedToPlay {
-            sequencer?.play()
-            print("PLAYING: \(isPlaying)")
-            transportState = .playing
-        }
- */
+        sequencer.play()
+        transportStateInput.send(value: .playing)
     }
 }
 
@@ -329,27 +298,12 @@ public protocol AudioSequencerObserver /*: AudioTransportObserver*/ {
 }
 
 
+// MARK: SETTINGS
 extension AudioSequencer: AudioSequencerProtocol {
-    public enum SettableProperty {
-        case FXSend(volume: Float)
-        case outputVolume(volume: Float)
-    }
-    /*
-       var sequencer: MidiSequencer? {
-           return privateSequencer
-       }
-*/
-       public var sequencer: AppleSequencer? {
-           return privateSequencer
-       }
-    
-    public var stemPlayers: [StemPlayer] {
-        return privateStemPlayers
-    }
     public func set(property: AudioSequencer.SettableProperty){
         switch property {
-        case .FXSend(let volume): fxMixer.outputVolume = volume
-        case .outputVolume(let volume): outputMixer.outputVolume = volume
+        case .FXSend(let volume): self.fxSend = volume
+        case .outputVolume(let volume): self.volume = volume
         }
     }
     public func set(properties: [AudioSequencer.SettableProperty]){
@@ -357,19 +311,42 @@ extension AudioSequencer: AudioSequencerProtocol {
             set(property: property)
         }
     }
+    public func set(settings: Settings){
+        self.set(properties: settings.properties)
+    }
+    /// Volume for mixer to fx send.
+    var fxSend: Volume {
+        get { return self.stemFXMixer.outputVolume }
+        set { self.stemFXMixer.outputVolume = newValue }
+    }
+    /// Volume for mixer to main outputs.
+    var volume: Volume {
+        get { return self.outputMixer.outputVolume }
+        set { self.outputMixer.outputVolume = newValue }
+    }
+    
+    /// Controls the master volume for the sequencer. Should not be altered by cartridges. Put in place to allow crossfades between tracks.
+    public var masterVolume: Volume {
+        get {
+            return mainMaster.outputVolume
+        } set (newMasterVolume){
+            mainMaster.outputVolume = newMasterVolume
+            fxMaster.outputVolume = newMasterVolume
+        }
+    }
 }
 
 // MARK: CALCULATED VARS
 extension AudioSequencer {
-    private var defaults: [AudioSequencer.SettableProperty] {
-        return [.FXSend(volume: 1), .outputVolume(volume: 1)]
-    }
     private var engine: AVAudioEngine {
         return audioEngine.engine
     }
-    var activeStemPlayers: [StemPlayer] {
+    
+    internal static func activeStemPlayers(
+        from allStemPlayers: [StemPlayer]
+    ) -> [StemPlayer] {
         var activeStemPlayers: [StemPlayer] = []
-        for stemPlayer in stemPlayers {
+        for stemPlayer in allStemPlayers {
             if stemPlayer.audioTrackState == .cued {
                 activeStemPlayers.append(stemPlayer)
             }
@@ -377,17 +354,48 @@ extension AudioSequencer {
         return activeStemPlayers
     }
     
+    // SETTING STATE TO READY SHOULD BE A FUNCTION WITH SOME VERIFICATION??
     public var sequencerState: AudioSequencer.State {
-        get {
-            return sequencerStateProperty.value
-        }
-        set {
-            self.sequencerStateInput.send(value: newValue)
-        }
+        return sequencerStateProperty.value
+    }
+    
+    public var transportState: AudioTransportState {
+        return audioTransportState.value
+    }
+    public var settings: Settings {
+        return Settings(fxSend: self.fxSend, volume: self.volume)
     }
 }
 
 
+// MARK: HELPER METHODS
+extension AudioSequencer {
+    internal static func stemPlayers(
+        from trackCount: Int,
+        audioEngine: AudioEngineProtocol,
+        outputMixer: AVAudioMixerNode,
+        fxMixer: AVAudioMixerNode
+    ) -> [StemPlayer] {
+        
+        // ISSUE WITH COUNTING???? i+?
+        var stemPlayers: [StemPlayer] = []
+        for i in 0..<trackCount {
+            let outputConnection = AVAudioConnectionPoint(
+                node: outputMixer,
+                bus: i+trackCount
+            )
+            let fxConnection = AVAudioConnectionPoint(
+                node: fxMixer,
+                bus: i+trackCount
+            )
+            let stemPlayer = StemPlayer(
+                audioEngine: audioEngine,
+                outputConnectionPoints: [outputConnection], fxConnectionPoints: [fxConnection])
+            stemPlayers.append(stemPlayer)
+        }
+        return stemPlayers
+    }
+}
 
 
 

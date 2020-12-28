@@ -116,6 +116,7 @@ extension StemPlayer {
     public func uncue(){
         return self.unload()
     }
+    /// Disconnects, unloads the audio file and resets all settings to default.
     public func unload(){
         if isConnected {
             disconnect()
