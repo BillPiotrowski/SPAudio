@@ -136,7 +136,7 @@ extension AudioSequencer {
         self.privateSequencer = AppleSequencer()
         //self.sequenceCartridge = nil
         for stemPlayer in activeStemPlayers {
-            stemPlayer.uncue()
+            stemPlayer.unload()
         }
         set(properties: defaults)
         self.sequencerStateInput.send(value: .empty)

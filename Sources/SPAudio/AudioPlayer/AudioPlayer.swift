@@ -10,6 +10,8 @@ import SPCommon
 import AVFoundation
 import ReactiveSwift
 
+// ADD CONNECT ON BACKGROUND THREAD PROMISE??
+
 public class AudioPlayer {
     internal let avAudioPlayerNode = AVAudioPlayerNode()
     private let audioEngine: AudioEngineProtocol
@@ -66,7 +68,7 @@ extension AudioPlayer {
     }
 }
 
-// MARK: CUE / UNCUE
+// MARK: LOAD / UNLOAD
 extension AudioPlayer {
     @available(*, deprecated, renamed: "load")
     public func cue(
