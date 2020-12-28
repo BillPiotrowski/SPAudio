@@ -11,6 +11,7 @@ import AVFoundation
 import AudioKit
 import MediaPlayer
 import WPNowPlayable
+import ReactiveSwift
 
 public protocol AudioEngineControllerProtocol {
     func stop()
@@ -29,6 +30,8 @@ public protocol PlaybackBrainProtocol: class {
     func cueNext() throws
 }
 
+/// A Void element that can be a placeholder for more useful information in the future. This is sent as a value when the audio engine periodically updates every 0.2 (currently) seconds.
+public typealias AudioEnginePeriodicUpdate = Void
 
 public class AudioEngine: AudioEngineProtocol, Observable2 {
     //var observations: [ObjectIdentifier : Observer] = [:]
@@ -48,6 +51,11 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
     public weak var playbackEngine: AudioPlayback?
     public weak var inputEngine: InputAudioEngine?
     
+    ///
+    //public let periodicUpdateSignal: Signal<AudioEnginePeriodicUpdate, Never>
+    private let periodicUpdateSignalInput: Signal<AudioEnginePeriodicUpdate, Never>.Observer
+    public let periodicUpdateSignalProducer: SignalProducer<AudioEnginePeriodicUpdate, Never>
+    
     private var timer: Timer?
     
 //    private var akPeriodicFunction: AKPeriodicFunction
@@ -55,12 +63,21 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
     
     public init(){
         //self.iOSNowPlayable = IOSNowPlayableBehavior()
+        
+        let periodicUpdatePipe = Signal<AudioEnginePeriodicUpdate, Never>.pipe()
+        let periodicUpdateSignalProducer = SignalProducer(
+            periodicUpdatePipe.output
+        )
+        
+        
         let outputMixer = Mixer()
         let akEngine = AudioKit.AudioEngine()
         akEngine.output = outputMixer
         
         let avMixer = AVAudioMixerNode()
-        
+        //self.periodicUpdateSignal = periodicUpdatePipe.output
+        self.periodicUpdateSignalInput = periodicUpdatePipe.input
+        self.periodicUpdateSignalProducer = periodicUpdateSignalProducer
         self.akEngine = akEngine
         self.outputMixer = outputMixer
         self.avMixer = avMixer
@@ -78,16 +95,16 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
         
     }
     
-    private func periodicUpdateHandler(){
-        let observation = Observation2.audioEngine
-        //let observation = Observation.audioEngine
-        sendToObservers2(observation)
-        //sendToObservers(observation)
-    }
-    
+//    private func periodicUpdateHandler(){
+//        let observation = Observation2.audioEngine
+//        //let observation = Observation.audioEngine
+//        sendToObservers2(observation)
+//        //sendToObservers(observation)
+//    }
+//
     
     private func periodicUpdateHandler(_ timer: Timer){
-        
+        self.periodicUpdateSignalInput.send(value: ())
         let observation = Observation2.audioEngine
         //let observation = Observation.audioEngine
         sendToObservers2(observation)

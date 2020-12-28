@@ -7,7 +7,7 @@
 //
 
 import AVFoundation
-
+import ReactiveSwift
 
 
 public protocol AudioEngineProtocol: Observable2 {
@@ -16,4 +16,5 @@ public protocol AudioEngineProtocol: Observable2 {
     func start() throws
     var isRunning: Bool { get }
     var engine: AVAudioEngine { get }
+    var periodicUpdateSignalProducer: SignalProducer<AudioEnginePeriodicUpdate, Never> { get }
 }
