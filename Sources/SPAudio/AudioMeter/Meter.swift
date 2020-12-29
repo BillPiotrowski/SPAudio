@@ -136,9 +136,11 @@ extension AudioMeter {
         case .running: return true
         }
     }
+    
+    // BUILD OUT DETACH
     internal func detach(){
-        guard let node = self.node
-        else { return }
+//        guard let node = self.node
+//        else { return }
     }
     internal func attach(node: AVAudioNode){
         if(isRunning){
