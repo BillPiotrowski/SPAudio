@@ -210,10 +210,10 @@ extension AudioPlayer: AudioPlayerTransport {
 
 // MARK: CALCULATED VARS
 extension AudioPlayer {
-    @available(*, deprecated, message: "This is going to be made internal.")
-    public var node: AVAudioNode {
-        return avAudioPlayerNode
-    }
+//    @available(*, deprecated, message: "This is going to be made internal.")
+//    public var node: AVAudioNode {
+//        return avAudioPlayerNode
+//    }
     
     /// The format of the audioFile if one has been successfully loaded.
     public var audioFormat: AVAudioFormat? {

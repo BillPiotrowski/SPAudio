@@ -7,6 +7,7 @@
 //
 
 import AVFoundation
+import SPCommon
 
 
 public class InputAudioEngine {
@@ -15,6 +16,7 @@ public class InputAudioEngine {
     public let recordedDialogMixer: AVAudioMixerNode
     
     public let recordedDialogPlayer: AudioPlayer
+    // MAKE INTERNAL
     public let meter: AudioMeter
     
     public init(
@@ -24,10 +26,6 @@ public class InputAudioEngine {
         let recordedDialogMixer = AVAudioMixerNode()
         audioEngine.engine.attach(recordedDialogMixer)
         let mixinginput = AVAudioConnectionPoint(node: recordedDialogMixer, bus: 2)
-        
-        
-        //audioEngine.engine.connect(recordedDialogMixer, to: outputConnectionPoints, fromBus: 0, format: nil)
-        //recordedDialogMixer.connect(to: outputConnectionPoints[0])
         
         self.audioEngine = audioEngine
         self.outputConnectionPoints = outputConnectionPoints
@@ -52,10 +50,41 @@ extension InputAudioEngine: AudioEngineControllerProtocol {
         meter.stop()
         recordedDialogPlayer.stop()
     }
+    /// Duration of the audio meter as a ratio from 0-1
+    public var meterSpeedRatio: MeterTimeRatio.Ratio {
+        get { return meter.speedRatio }
+        set { self.meter.speedRatio = newValue }
+    }
+}
+
+extension InputAudioEngine {
+    public func tapDeviceInput() throws -> (AudioMeter, AudioInputDevice){
+        guard let inputDevice = audioEngine.inputDevice else {
+            throw InputEngineError.noDeviceInput
+        }
+        meter.attach(node: inputDevice.avNode)
+        return (meter, inputDevice)
+    }
+    
+    public func tapDialogPlayer() -> (AudioMeter, AudioPlayer) {
+        meter.attach(node: recordedDialogPlayer.avAudioPlayerNode)
+        return (meter, recordedDialogPlayer)
+    }
 }
 
 // MARK: AUDIO ATTACH
 extension InputAudioEngine {
     func attach(_ engine: AVAudioEngine){
+    }
+}
+
+
+private enum InputEngineError: ScorepioError {
+    case noDeviceInput
+    
+    var message: String {
+        switch self {
+        case .noDeviceInput: return "There are no device inputs. Can not attach meter."
+        }
     }
 }
