@@ -22,6 +22,7 @@ public class StemPlayer {
     private let fxConnectionPoints: [AVAudioConnectionPoint]
     private let outputConnectionPoints: [AVAudioConnectionPoint]
     private let audioEngine: AudioEngineProtocol
+    public let stemIndex: Int
 
     
     
@@ -38,7 +39,8 @@ public class StemPlayer {
     init(
         audioEngine: AudioEngineProtocol,
         outputConnectionPoints: [AVAudioConnectionPoint],
-        fxConnectionPoints: [AVAudioConnectionPoint]
+        fxConnectionPoints: [AVAudioConnectionPoint],
+        stemIndex: Int
     ){
         let mixerInputConnection = AVAudioConnectionPoint(
             node: inputMixer,
@@ -53,6 +55,7 @@ public class StemPlayer {
         self.outputConnectionPoints = outputConnectionPoints
         self.audioPlayer = audioPlayer
         self.audioEngine = audioEngine
+        self.stemIndex = stemIndex
         
         attach(engine: audioEngine.engine)
         revertToDefaultSettings()

@@ -377,20 +377,23 @@ extension AudioSequencer {
         fxMixer: AVAudioMixerNode
     ) -> [StemPlayer] {
         
-        // ISSUE WITH COUNTING???? i+?
         var stemPlayers: [StemPlayer] = []
         for i in 0..<trackCount {
             let outputConnection = AVAudioConnectionPoint(
                 node: outputMixer,
-                bus: i+trackCount
+                bus: i
             )
             let fxConnection = AVAudioConnectionPoint(
                 node: fxMixer,
-                bus: i+trackCount
+                bus: i
             )
             let stemPlayer = StemPlayer(
                 audioEngine: audioEngine,
-                outputConnectionPoints: [outputConnection], fxConnectionPoints: [fxConnection])
+                outputConnectionPoints: [outputConnection],
+                fxConnectionPoints: [fxConnection],
+                stemIndex: i
+            )
+                
             stemPlayers.append(stemPlayer)
         }
         return stemPlayers
