@@ -53,7 +53,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         
         // ASSERT
@@ -88,7 +89,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         
         // ACT
@@ -109,7 +111,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(audioURL: self.testFileURL)
         
@@ -132,7 +135,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(audioURL: self.testFileURL)
         
@@ -170,7 +174,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL,
@@ -212,7 +217,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(audioURL: self.testFileURL)
         try sequenceStem.connect()
@@ -250,7 +256,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL,
@@ -292,7 +299,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL
@@ -314,7 +322,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL
@@ -338,7 +347,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         
         // ASSERT
@@ -360,7 +370,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         
         // ACT
@@ -414,7 +425,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL,
@@ -439,7 +451,8 @@ final class ScorepioSequenceStemTests: XCTestCase {
         let sequenceStem = StemPlayer(
             audioEngine: self.audioEngine,
             outputConnectionPoints: [self.outputConnectionPoint],
-            fxConnectionPoints: [self.fxConnectionPoint]
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
         )
         try sequenceStem.load(
             audioURL: self.testFileURL
