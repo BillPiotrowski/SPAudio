@@ -322,7 +322,7 @@ public struct AudioInputDevice {
         let portDescription = session.preferredInput
         //    else { throw AudioInputDeviceError.noPreferredInput }
         
-        guard session.recordAllowed
+        guard AudioSession.isRecordingPermitted
             else { throw AudioInputDeviceError.micPermissionNotGranted }
         
         let format = inputNode.inputFormat(forBus: bus)

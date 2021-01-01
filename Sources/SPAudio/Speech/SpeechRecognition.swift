@@ -26,35 +26,10 @@ public class SpeechRecognition {
         case on
     }
     
-    /*
-    func authorize(){
-        if #available(iOS 10.0, *) {
-            SFSpeechRecognizer.requestAuthorization {
-                [unowned self] (authStatus) in
-                switch authStatus {
-                case .authorized:
-                    print("AUTHORIZED")
-                    //if let recording = self.recording {
-                    //TODO: Kick off the transcription
-                //}
-                case .denied:
-                    print("Speech recognition authorization denied")
-                case .restricted:
-                    print("Not available on this device")
-                case .notDetermined:
-                    print("Not determined")
-                @unknown default: break
-                }
-            }
-        } else {
-            // Fallback on earlier versions
-        }
-    }
-    */
     
     func start(){
-        try? requestSpeechRecognizerPermission()
-        //authorize()
+        // PUT A CHECK TO MAKE SURE IT'S ENABLED.
+        //try? requestSpeechRecognizerPermission()
         setupRequest()
         state = .on
     }
@@ -123,69 +98,3 @@ public class SpeechRecognition {
     }
     
 }
-
-// MARK: PERMISSION
-extension SpeechRecognition {
-    public enum SpeechRecognizerPermission {
-        case authorized, denied, restricted, notDetermined
-        
-        var enabled: Bool {
-            switch self {
-            case .authorized: return true
-            default: return false
-            }
-        }
-    }
-    
-    public var speechRecognizerPermission: SpeechRecognizerPermission {
-        return SpeechRecognition.speechRecognizerPermission(
-            fromSFAuthStatus: SFSpeechRecognizer.authorizationStatus()
-        )
-    }
-    
-    static func speechRecognizerPermission(
-        fromSFAuthStatus: SFSpeechRecognizerAuthorizationStatus
-    ) -> SpeechRecognizerPermission {
-        switch fromSFAuthStatus {
-        case .authorized: return .authorized
-        case .denied: return .denied
-        case .restricted: return .restricted
-        case .notDetermined: return .notDetermined
-        @unknown default: fatalError()
-        }
-    }
-    
-    public func requestSpeechRecognizerPermission(
-        callback: ((Bool) -> Void)? = nil
-    ) throws {
-        if #available(iOS 10.0, *) {
-            SFSpeechRecognizer.requestAuthorization() {
-                authStatus in
-                let speechRecognizerPermission = SpeechRecognition.speechRecognizerPermission(
-                    fromSFAuthStatus: authStatus
-                )
-                guard let callback = callback else { return }
-                callback(speechRecognizerPermission.enabled)
-            }
-        } else {
-            throw SpeechRecognitionError.iOSNotSupported
-        }
-    }
-}
-
-
-// MARK: DEFINITIONS
-extension SpeechRecognition {
-    enum SpeechRecognitionError: ScorepioError {
-        case iOSNotSupported
-        
-        var message: String {
-            switch self {
-            case .iOSNotSupported: return "Speech Recognition is not supported on this version of iOS. Please update to iOS 10.0 or greater."
-            }
-        }
-    }
-}
-
-
-

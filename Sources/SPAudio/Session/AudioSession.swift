@@ -11,7 +11,8 @@ import AVFoundation
 import AudioKit
 
 public class AudioSession {
-    let avSession = AVAudioSession.sharedInstance()
+    let avSession = AudioSession.avSession
+    static public let avSession = AVAudioSession.sharedInstance()
     
     public init(){
         configureAudioSession()
@@ -94,40 +95,4 @@ public class AudioSession {
             }
         }
     }
-}
-
-// MARK: RECORD PERMISSION
-extension AudioSession {
-    public var recordPermission: RecordPermission {
-        switch avSession.recordPermission {
-        case .denied: return .denied
-        case .granted: return .granted
-        case .undetermined: return .undetermined
-        @unknown default:
-            fatalError()
-        }
-    }
-    
-    public var recordAllowed: Bool {
-        switch recordPermission {
-        case .granted: return true
-        default: return false
-        }
-    }
-    
-    public func requestRecordPermission(
-        callback: ((Bool) -> Void)? = nil
-    ){
-        avSession.requestRecordPermission({ permission in
-            guard let callback = callback else { return }
-            callback(permission)
-        })
-    }
-    
-    public enum RecordPermission {
-        case granted
-        case denied
-        case undetermined
-    }
-    
 }
