@@ -17,7 +17,7 @@ extension SpeechRecognition {
     }
     
     internal static func requestSpeechRecognizerPermission(
-    ) throws -> Promise<SpeechRecognizerAuthorizationStatus> {
+    ) -> Promise<SpeechRecognizerAuthorizationStatus> {
         return Promise<SpeechRecognizerAuthorizationStatus>(on: .main) { fulfill, reject in
             guard #available(iOS 10.0, *) else {
                 reject(SpeechRecognitionError.iOSNotSupported)
