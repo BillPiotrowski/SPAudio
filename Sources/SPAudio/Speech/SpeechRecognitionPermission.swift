@@ -10,13 +10,15 @@ import Speech
 import Promises
 
 extension SpeechRecognition {
-    internal static var speechRecognizerAuthorizationStatus: SpeechRecognizerAuthorizationStatus {
+    // WOULD PREFER THESE BE INTERNAL AND NOT A SINGLETON
+    public static var speechRecognizerAuthorizationStatus: SpeechRecognizerAuthorizationStatus {
         return SpeechRecognizerAuthorizationStatus(
             from: SFSpeechRecognizer.authorizationStatus()
         )
     }
     
-    internal static func requestSpeechRecognizerPermission(
+    // WOULD PREFER THESE BE INTERNAL AND NOT A SINGLETON
+    public static func requestSpeechRecognizerPermission(
     ) -> Promise<SpeechRecognizerAuthorizationStatus> {
         return Promise<SpeechRecognizerAuthorizationStatus>(on: .main) { fulfill, reject in
             guard #available(iOS 10.0, *) else {
