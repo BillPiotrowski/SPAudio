@@ -12,7 +12,7 @@ import SPCommon
 extension AudioPlayer {
     public enum State {
         case standby
-        case cued(transport: AudioPlayerTransport)
+        case cued
     }
     
     enum Error: ScorepioError {

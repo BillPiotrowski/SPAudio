@@ -284,6 +284,24 @@ final class AudioPlayerTests: XCTestCase {
         XCTAssertTrue(audioPlayer.audioFile != nil)
     }
     
+    // MARK: MEMORY LEAKS
+    func testMemoryLeak1() throws {
+        // ARRANGE
+        var audioPlayer: AudioPlayer? = AudioPlayer(
+            audioEngine: self.audioEngine,
+            outputConnectionPoints: [connectionPoint]
+        )
+        try audioPlayer?.load(self.testFileURL)
+        try audioPlayer?.play()
+        weak var leakRef = audioPlayer
+
+        // ACT
+        audioPlayer = nil
+
+        // ASSERT
+        XCTAssert(leakRef == nil)
+    }
+    
     
     static var allTests = [
         ("testAudioPlayerInit", testAudioPlayerInit),
@@ -296,6 +314,7 @@ final class AudioPlayerTests: XCTestCase {
         ("testStop", testStop),
         ("testUnloadFromPlaying", testUnloadFromPlaying),
         ("testLoadFromPlaying", testLoadFromPlaying),
+        ("testMemoryLeak1", testMemoryLeak1),
     ]
 }
 

@@ -31,6 +31,10 @@ public class AudioPlayer {
     
     
     
+    /// Creates an instance of AudioPlayer.
+    /// - Parameters:
+    ///   - audioEngine: the AudioEngine instance that the AudioPlayer instance will attach to. Player maintains a strong retain of this for the entire lifecycle.
+    ///   - outputConnectionPoints: The registered output for the AudioPlayer instance. AudioPlayer maintains a strong retain for the entire lifecycle.
     public init(
         audioEngine: AudioEngineProtocol,
         outputConnectionPoints: [AVAudioConnectionPoint]
@@ -58,6 +62,12 @@ public class AudioPlayer {
         self.outputConnectionPoints = outputConnectionPoints
         
         self.attach(engine: engine)
+    }
+    
+    deinit {
+        // CAUSES THREAD ERROR FROM avAudioPlayerNode.
+        // avAudioPlayerNode.isPlaying is false here, so possibly deinits itself?
+        //self.unload()
     }
 }
 
@@ -89,7 +99,7 @@ extension AudioPlayer {
         } catch {
             throw Error.couldNotLoadAudio(url: audioFileURL)
         }
-        self.audioPlayerStateInput.send(value: .cued(transport: self))
+        self.audioPlayerStateInput.send(value: .cued)
         if autoPlay {
             try? play()
         }

@@ -471,6 +471,28 @@ final class ScorepioSequenceStemTests: XCTestCase {
         XCTAssertTrue(sequenceStem.audioPlayer.audioFile == nil)
     }
     
+    // MARK: TEST MEMORY LEAK
+    func testMemoryLeak() throws {
+        // ARRANGE
+        var sequenceStem: StemPlayer? = StemPlayer(
+            audioEngine: self.audioEngine,
+            outputConnectionPoints: [self.outputConnectionPoint],
+            fxConnectionPoints: [self.fxConnectionPoint],
+            stemIndex: 0
+        )
+        try sequenceStem!.load(
+            audioURL: self.testFileURL
+        )
+        try sequenceStem!.play()
+        weak var leakRef = sequenceStem
+        
+        // ACT
+        sequenceStem = nil
+        
+        // ASSERT
+        XCTAssertTrue(leakRef == nil)
+    }
+    
     static var allTests = [
         ("testInit", testInit),
         ("testLoad", testLoad),
@@ -486,6 +508,7 @@ final class ScorepioSequenceStemTests: XCTestCase {
         ("testPanToPanControl", testPanToPanControl),
         ("testPanControlToPan", testPanControlToPan),
         ("testRevert", testRevert),
-        ("testUnloadFromPlaying", testUnloadFromPlaying) 
+        ("testUnloadFromPlaying", testUnloadFromPlaying),
+        ("testMemoryLeak", testMemoryLeak),
     ]
 }

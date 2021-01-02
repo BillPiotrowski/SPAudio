@@ -527,6 +527,34 @@ final class ScorepioSequenceTests: XCTestCase {
         
     }
     
+    // MARK: TEST MEMORY LEAK
+    func testMemoryLeak() throws {
+        // ARRANGE
+        var sequence: AudioSequencer? = AudioSequencer(
+            audioEngine: self.audioEngine,
+            playerConnectionPoint: self.outputConnectionPoint,
+            fxConnectionPoint: self.fxConnectionPoint
+        )
+        let midiSequence = sequence!.sequencer
+        let duration = Duration(seconds: 10)
+        midiSequence.setLength(duration)
+        let _ = midiSequence.newTrack("Conductor")
+        for stem in sequence!.stemPlayers {
+            try stem.load(audioURL: self.testFileURL)
+            let _ = midiSequence.newTrack()
+        }
+        sequence!.loadingComplete()
+        try sequence!.connect()
+        try sequence!.play()
+        weak var leakRef = sequence
+        
+        // ACT
+        sequence = nil
+        
+        // ASSERT
+        XCTAssert(leakRef == nil)
+    }
+    
     
     
     static var allTests = [
@@ -546,5 +574,6 @@ final class ScorepioSequenceTests: XCTestCase {
         ("testResetFromPlaying", testResetFromPlaying),
         ("testConnectWhileConnected", testConnectWhileConnected),
         ("testDisconnectWhileDisconnected", testDisconnectWhileDisconnected),
+        ("testMemoryLeak", testMemoryLeak),
     ]
 }
