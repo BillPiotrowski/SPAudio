@@ -18,6 +18,9 @@ extension InputAudioEngine {
     ) -> Promise<SpeechRecognizerAuthorizationStatus> {
         return SpeechRecognition.requestSpeechRecognizerPermission()
     }
+    public var isSpeechRecognitionPermitted: Bool {
+        return speechRecognizerAuthorizationStatus.isEnabled
+    }
 }
 
 // MARK: RECORD PERMISSION
