@@ -8,7 +8,8 @@
 
 import SPCommon
 import AVFoundation
-import AudioKit
+//import AudioKit
+import AudioKitLite
 
 public class AudioSession {
     let avSession = AudioSession.avSession

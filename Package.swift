@@ -26,13 +26,13 @@ let package = Package(
             Package.Dependency.Requirement.branch("main")
         ),
         .package(
-            url: "https://github.com/AudioKit/AudioKit",
-            Package.Dependency.Requirement.branch("v5-main")
-        ),
-        .package(
             name: "Promises",
             url: "https://github.com/google/promises.git",
             "1.2.8" ..< "1.3.0"
+        ),
+        .package(
+            url: "https://github.com/BillPiotrowski/AudioKitLite",
+            Package.Dependency.Requirement.branch("main")
         ),
     ],
     targets: [
@@ -42,12 +42,20 @@ let package = Package(
                 "SPCommon",
                 "WPNowPlayable",
                 "ReactiveSwift",
-                "AudioKit",
+                "AudioKitLite",
                 .product(name: "Promises", package: "Promises"),
             ]
         ),
+//        .binaryTarget(
+//            name: "MIKMIDI",
+//            path: "MIKMIDI.xcframework"
+//        ),
         .testTarget(
             name: "SPAudioTests",
-            dependencies: ["SPAudio"]),
+            dependencies: [
+                "SPAudio",
+                "AudioKitLite"
+            ]
+        ),
     ]
 )

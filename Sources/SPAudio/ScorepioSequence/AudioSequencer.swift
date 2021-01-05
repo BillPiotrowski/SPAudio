@@ -7,13 +7,14 @@
 //
 
 import AVFoundation
-import AudioKit
+//import AudioKit
 import CoreAudioKit
 import CoreAudio
 import CoreMIDI
 import CoreAudioKit
 import ReactiveSwift
 import SPCommon
+import AudioKitLite
 
 public class AudioSequencer /*: Observable2 */{
     /// Final mixerNode before output.
@@ -36,6 +37,8 @@ public class AudioSequencer /*: Observable2 */{
     private let fxConnectionPoints: [AVAudioConnectionPoint]
     private let audioEngine: AudioEngineProtocol
     
+    
+    
     public static let trackCount: Int = 9
     public static let usesSynthDefault: Bool = false
     public static let masterVolumeDefault: Volume = 1
@@ -43,7 +46,7 @@ public class AudioSequencer /*: Observable2 */{
     public let stemPlayers: [StemPlayer]
     internal private(set) var activeStemPlayers: [StemPlayer] = []
     // WHY IS THIS OPTIONAL??
-    public private(set) var sequencer: AppleSequencer
+    public private(set) var sequencer: AudioKitLite.AppleSequencer
     public private(set) var isConnected: Bool = false
     public private(set) var usesSynth: Bool
     
@@ -53,7 +56,7 @@ public class AudioSequencer /*: Observable2 */{
     private let sequencerStateInput: Signal<State, Never>.Observer
     public let sequencerStateProperty: Property<State>
     
-    public let synth: Synth
+//    public let synth: Synth
     
     public init(
         audioEngine: AudioEngineProtocol,
@@ -62,7 +65,7 @@ public class AudioSequencer /*: Observable2 */{
     ){
         let stemMixer = AVAudioMixerNode()
         let fxMixer = AVAudioMixerNode()
-        let synth = Synth()
+//        let synth = Synth()
         
         let initialTransportState = AudioTransportState.stopped
         let initialSequencerState = State.empty
@@ -86,12 +89,12 @@ public class AudioSequencer /*: Observable2 */{
             fxMixer: fxMixer
         )
         
-        let sequencer = AppleSequencer()
+        let sequencer = AudioKitLite.AppleSequencer()
         
         self.sequencerStateInput = sequencerStateSignal.input
         self.sequencerStateProperty = sequencerStateProperty
         self.sequencer = sequencer
-        self.synth = synth
+//        self.synth = synth
         self.playerConnectionPoints = [playerConnectionPoint]
         self.fxConnectionPoints = [fxConnectionPoint]
         self.audioEngine = audioEngine
@@ -116,7 +119,7 @@ extension AudioSequencer {
         engine.attach(stemFXMixer)
         engine.attach(mainMaster)
         engine.attach(fxMaster)
-        engine.attach(synth.avAudioNode)
+//        engine.attach(synth.avAudioNode)
     }
 }
 
@@ -144,7 +147,7 @@ extension AudioSequencer {
         self.usesSynth = AudioSequencer.usesSynthDefault
         
         // CLEAR PREVIOUS SEQ?
-        self.sequencer = AppleSequencer()
+        self.sequencer = AudioKitLite.AppleSequencer()
         
         for stemPlayer in activeStemPlayers {
             stemPlayer.unload()
@@ -166,17 +169,18 @@ extension AudioSequencer {
         // MAKE SURE EVERYTHING IS DISCONNECTED?? MAY NOT BE NECESSARY
         self.disconnect()
         // BETTER WAY TO HANDLE audioFormat?
-        let audioFormat = stemPlayers[0].audioFormat ?? synth.avAudioNode.outputFormat(forBus: 0)
+//        let audioFormat = stemPlayers[0].audioFormat ?? synth.avAudioNode.outputFormat(forBus: 0)
+        let audioFormat = stemPlayers[0].audioFormat
         
-        if self.usesSynth {
-            engine.connect(
-                synth.avAudioNode,
-                to: outputMixer,
-                fromBus: 0,
-                toBus: 2,
-                format: audioFormat
-            )
-        }
+//        if self.usesSynth {
+//            engine.connect(
+//                synth.avAudioNode,
+//                to: outputMixer,
+//                fromBus: 0,
+//                toBus: 2,
+//                format: audioFormat
+//            )
+//        }
         
         //ORDER IS IMPORTANT. PUTTING STEMS AFTER MIXER WILL BREAK WITH PITCH AUDIO UNIT!!!!!
         for stemPlayer in activeStemPlayers {
@@ -206,9 +210,9 @@ extension AudioSequencer {
         for stemPlayer in activeStemPlayers {
             stemPlayer.disconnect()
         }
-        if synth.avAudioNode.isOutputConnected {
-            engine.disconnectNodeOutput(synth.avAudioNode)
-        }
+//        if synth.avAudioNode.isOutputConnected {
+//            engine.disconnectNodeOutput(synth.avAudioNode)
+//        }
         engine.disconnectNodeOutput(stemFXMixer)
         engine.disconnectNodeOutput(stemMixer)
         engine.disconnectNodeOutput(outputMixer)
@@ -230,9 +234,9 @@ extension AudioSequencer {
             else {
                 return false
         }
-        if self.usesSynth && !synth.avAudioNode.isOutputConnected {
-            return false
-        }
+//        if self.usesSynth && !synth.avAudioNode.isOutputConnected {
+//            return false
+//        }
         for stemPlayer in activeStemPlayers {
             guard stemPlayer.isConnected else { return false }
         }

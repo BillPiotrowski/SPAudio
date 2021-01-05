@@ -8,7 +8,7 @@
 
 import SPCommon
 import AVFoundation
-import AudioKit
+//import AudioKit
 import MediaPlayer
 import WPNowPlayable
 import ReactiveSwift
@@ -39,13 +39,13 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
     
     
     public let engine: AVAudioEngine
-    private let akEngine: AudioKit.AudioEngine
+//    private let akEngine: AudioKit.AudioEngine
     
-    let outputMixer: Mixer
+//    let outputMixer: Mixer
     public let avMixer: AVAudioMixerNode
     //weak var transport: PlaybackBrain?
     public weak var transport: PlaybackBrainProtocol?
-    let avMixerAKNode: Node
+//    let avMixerAKNode: Node
     public let session = AudioSession()
     
     public weak var playbackEngine: AudioPlayback?
@@ -70,21 +70,23 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
         )
         
         
-        let outputMixer = Mixer()
-        let akEngine = AudioKit.AudioEngine()
-        akEngine.output = outputMixer
+//        let outputMixer = Mixer()
+//        let akEngine = AudioKit.AudioEngine()
+//        akEngine.output = outputMixer
+        let engine = AVAudioEngine()
         
         let avMixer = AVAudioMixerNode()
         //self.periodicUpdateSignal = periodicUpdatePipe.output
         self.periodicUpdateSignalInput = periodicUpdatePipe.input
         self.periodicUpdateSignalProducer = periodicUpdateSignalProducer
-        self.akEngine = akEngine
-        self.outputMixer = outputMixer
+//        self.akEngine = akEngine
+//        self.outputMixer = outputMixer
         self.avMixer = avMixer
-        self.avMixerAKNode = Node(avAudioNode: avMixer)
-        self.engine = akEngine.avEngine
+//        self.avMixerAKNode = Node(avAudioNode: avMixer)
+        self.engine = engine
         
         engine.attach(avMixer)
+        engine.connect(avMixer, to: engine.mainMixerNode, format: nil)
         
 //        self.akPeriodicFunction = AKPeriodicFunction(every: 1, handler: {})
 //        self.akPeriodicFunction = AKPeriodicFunction(
@@ -125,7 +127,8 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
     deinit {
         print("STOPPING AUDIO ENGINE!!!")
         stop()
-        akEngine.stop()
+        engine.stop()
+//        akEngine.stop()
 //        do {
 //            try AudioKit.stop()
 //        } catch {
@@ -179,7 +182,8 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
         //engine.stop()
         inputEngine?.stop()
         playbackEngine?.stop()
-        akEngine.stop()
+        engine.stop()
+//        akEngine.stop()
         timer?.invalidate()
         timer = nil
 //        do {
@@ -219,18 +223,19 @@ public class AudioEngine: AudioEngineProtocol, Observable2 {
 //        akPeriodicFunction.restart()
         connect()
 //        AudioKit.output = outputMixer
-        try akEngine.start()
+//        try akEngine.start()
+        try engine.start()
 //        try AudioKit.start(withPeriodicFunctions: akPeriodicFunction)
 //        akPeriodicFunction.start()
         //try AudioKit.start()
     }
     private func connect(){
-        outputMixer.addInput(avMixerAKNode)
+//        outputMixer.addInput(avMixerAKNode)
 //        outputMixer.connect(input: avMixerAKNode)
     }
     
     private func disconnect(){
-        outputMixer.removeInput(avMixerAKNode)
+//        outputMixer.removeInput(avMixerAKNode)
 //        avMixerAKNode.disconnectOutput()
         //avMixer.disconnectOutput()
         //outputMixer.disconnectInput()
