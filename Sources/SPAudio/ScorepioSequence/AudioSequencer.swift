@@ -25,7 +25,7 @@ public class AudioSequencer /*: Observable2 */{
     internal let fxMaster = AVAudioMixerNode()
     
     /// MixerNode that combines the stemMixer with the synthNode output. Sent to the mainMaster.
-    internal let outputMixer = AVAudioMixerNode()
+    internal let outputMixer: AVAudioMixerNode
     
     /// MixerNode that combines all stem outputs into a single signal and sends to outputMixer
     internal let stemMixer: AVAudioMixerNode
@@ -56,16 +56,24 @@ public class AudioSequencer /*: Observable2 */{
     private let sequencerStateInput: Signal<State, Never>.Observer
     public let sequencerStateProperty: Property<State>
     
-//    public let synth: Synth
+    public let synth: Synth
     
     public init(
         audioEngine: AudioEngineProtocol,
         playerConnectionPoint: AVAudioConnectionPoint,
         fxConnectionPoint: AVAudioConnectionPoint
     ){
+        let outputMixer = AVAudioMixerNode()
         let stemMixer = AVAudioMixerNode()
         let fxMixer = AVAudioMixerNode()
-//        let synth = Synth()
+        let synthConnectionPoint = AVAudioConnectionPoint(
+            node: outputMixer,
+            bus: 2
+        )
+        let synth = Synth(
+            wire: synthConnectionPoint,
+            audioEngine: audioEngine as! AudioEngine
+        )
         
         let initialTransportState = AudioTransportState.stopped
         let initialSequencerState = State.empty
@@ -102,8 +110,10 @@ public class AudioSequencer /*: Observable2 */{
         self.audioTransportState = property
         self.stemMixer = stemMixer
         self.stemFXMixer = fxMixer
+        self.outputMixer = outputMixer
         self.stemPlayers = stemPlayers
         self.usesSynth = AudioSequencer.usesSynthDefault
+        self.synth = synth
         
         attach()
         self.reset()
@@ -181,6 +191,9 @@ extension AudioSequencer {
 //                format: audioFormat
 //            )
 //        }
+        if self.usesSynth {
+            try self.synth.connect()
+        }
         
         //ORDER IS IMPORTANT. PUTTING STEMS AFTER MIXER WILL BREAK WITH PITCH AUDIO UNIT!!!!!
         for stemPlayer in activeStemPlayers {
@@ -210,9 +223,9 @@ extension AudioSequencer {
         for stemPlayer in activeStemPlayers {
             stemPlayer.disconnect()
         }
-//        if synth.avAudioNode.isOutputConnected {
-//            engine.disconnectNodeOutput(synth.avAudioNode)
-//        }
+        if synth.isConnected {
+            synth.disconnect()
+        }
         engine.disconnectNodeOutput(stemFXMixer)
         engine.disconnectNodeOutput(stemMixer)
         engine.disconnectNodeOutput(outputMixer)
@@ -234,9 +247,9 @@ extension AudioSequencer {
             else {
                 return false
         }
-//        if self.usesSynth && !synth.avAudioNode.isOutputConnected {
-//            return false
-//        }
+        if self.usesSynth && !synth.isConnected {
+            return false
+        }
         for stemPlayer in activeStemPlayers {
             guard stemPlayer.isConnected else { return false }
         }

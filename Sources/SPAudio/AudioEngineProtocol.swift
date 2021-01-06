@@ -9,7 +9,7 @@
 import AVFoundation
 import ReactiveSwift
 
-
+@available(*, deprecated, message: "Should simply use AudioEngine class.")
 public protocol AudioEngineProtocol: Observable2 {
     func stop()
     func stopIfNotRunning()

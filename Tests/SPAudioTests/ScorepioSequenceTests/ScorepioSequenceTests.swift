@@ -73,10 +73,7 @@ final class ScorepioSequenceTests: XCTestCase {
         engine: AVAudioEngine,
         sequence: AudioSequencer
     ) throws {
-        guard sequence.mainMaster.engine === engine
-        else { throw NSError(
-            domain: "mainMaster not attached.", code: 1, userInfo: nil
-        )}
+        XCTAssert(sequence.mainMaster.engine === engine)
         guard sequence.fxMaster.engine === engine
         else { throw NSError(
             domain: "fxMaster not attached.", code: 1, userInfo: nil
@@ -93,6 +90,8 @@ final class ScorepioSequenceTests: XCTestCase {
         else { throw NSError(
             domain: "stemFXMixer not attached.", code: 1, userInfo: nil
         )}
+        XCTAssert(sequence.synth.audioEngine.engine === engine)
+//        XCTAssert(sequence.synth.audio)
 //        guard sequence.synth.avAudioNode.engine === engine
 //        else { throw NSError(
 //            domain: "synth not attached.", code: 1, userInfo: nil
@@ -258,10 +257,9 @@ final class ScorepioSequenceTests: XCTestCase {
         guard sequence.stemFXMixer.isOutputConnected else {
             throw NSError(domain: "stemFXMixer not connected", code: 1, userInfo: nil)
         }
-//        guard sequence.usesSynth == sequence.synth.avAudioNode.isOutputConnected
-//        else {
-//            throw NSError(domain: "synth connection does not match usesSynth.", code: 1, userInfo: nil)
-//        }
+        if sequence.usesSynth {
+            XCTAssert(sequence.synth.isConnected)
+        }
         for stemPlayer in sequence.activeStemPlayers {
             guard stemPlayer.isConnected else {
                 throw NSError(domain: "stem player not connected.", code: 1, userInfo: nil)
@@ -309,9 +307,7 @@ final class ScorepioSequenceTests: XCTestCase {
         guard !sequence.stemFXMixer.isOutputConnected else {
             throw NSError(domain: "stemFXMixer should not be connected", code: 1, userInfo: nil)
         }
-//        guard !sequence.synth.avAudioNode.isOutputConnected else {
-//            throw NSError(domain: "synth should not be connected", code: 1, userInfo: nil)
-//        }
+        XCTAssert(!sequence.synth.isConnected)
         for stemPlayer in sequence.stemPlayers {
             guard !stemPlayer.isConnected else {
                 throw NSError(domain: "stem player should not be connected.", code: 1, userInfo: nil)
