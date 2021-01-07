@@ -9,7 +9,8 @@ let package = Package(
     products: [
         .library(
             name: "SPAudio",
-            targets: ["SPAudio"]),
+            targets: ["SPAudio"]
+        ),
     ],
     dependencies: [
         .package(

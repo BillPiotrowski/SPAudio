@@ -43,6 +43,9 @@ internal struct BufferReading {
             channelDataValueArray: channelDataValueArray,
             frameLength: buffer.frameLength
         )
+        // Making a note to ask if channelData needs to be deallocated?
+        // Crashes whereever I put it in this init.
+//        channelData.deallocate()
     }
 }
     

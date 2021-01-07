@@ -14,6 +14,9 @@ class VCA {
     private let destination: AVAudioConnectionPoint
     public private (set) var isConnected: Bool = false
     public private (set) var isPlaying: Bool = false
+    public var maxVolume: Float = VCA.maxVolumeDefault
+    
+    internal static let maxVolumeDefault: Float = 0.8
     
     init(
         wire to: AVAudioConnectionPoint,
@@ -80,7 +83,7 @@ extension VCA {
         if !isConnected {
             try self.connect()
         }
-        self.outputMixer.outputVolume = 1
+        self.outputMixer.outputVolume = maxVolume
         self.isPlaying = true
         
     }
