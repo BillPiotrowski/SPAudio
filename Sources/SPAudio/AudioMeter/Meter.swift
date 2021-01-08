@@ -49,7 +49,8 @@ public class AudioMeter {
     
     var state: State = .off
     
-    public let speechRecognition = SpeechRecognition()
+    private let speechRecognition: SpeechRecognition
+    public static let defaultIsSpeechEnabled = false
     
     private let intensitySignalInput: Signal<Intensity, Never>.Observer
     public let intensityProperty: ReactiveSwift.Property<Intensity>
@@ -61,15 +62,19 @@ public class AudioMeter {
     ///   - speed: The speed of the meter in seconds. Meter measures intensity over a lagging period of time. If not set, default will be used. Default is 2.5 seconds.
     public init(
         audioEngine: AudioEngineProtocol,
-        speed: Second? = nil
+        speed: Second? = nil,
+        isSpeechEnabled: Bool? = nil
     ){
-        
+        let isSpeechEnabled = isSpeechEnabled ?? AudioMeter.defaultIsSpeechEnabled
         let initialIntensity = AudioMeter.defaultIntensity
         
         let intensityPipe = Signal<Intensity, Never>.pipe()
         let intensityProperty = ReactiveSwift.Property(
             initial: initialIntensity,
             then: intensityPipe.output
+        )
+        let speechRecognition = SpeechRecognition(
+            isEnabled: isSpeechEnabled
         )
         
         let durationMeter = TimedMeter(speed: speed)
@@ -80,10 +85,27 @@ public class AudioMeter {
         self.intensitySignalInput = intensityPipe.input
         self.intensityProperty = intensityProperty
         self.scale = AudioMeter.defaultScale
+        self.speechRecognition = speechRecognition
     }
     
     
     
+}
+
+extension AudioMeter {
+    public var isSpeechEnabled: Bool {
+        get { return self.speechRecognition.isEnabled }
+        set {
+            speechRecognition.isEnabled = newValue
+            switch newValue {
+            case true:
+                if self.isRunning {
+                    speechRecognition.start()
+                }
+            case false: return
+            }
+        }
+    }
 }
 
 // MARK: LISTENER UPDATE
@@ -97,6 +119,7 @@ extension AudioMeter {
             let format = format
             else { return }
         
+        // CHECK IT'S ENABLED?
         self.speechRecognition.append(buffer: buffer)
         
         let bufferDecibelReading = bufferReading.decibel
@@ -122,7 +145,6 @@ extension AudioMeter {
         
         self.scale = AudioMeter.scale(maximumRatio: meterMaximum.average)
         
-//        self.value = fastLevel
         self.intensitySignalInput.send(value: intensity)
         
     }
@@ -164,12 +186,15 @@ extension AudioMeter {
             node.installTap(
                 onBus: 0,
                 bufferSize: 1024,
-                format: self.format
+                format: nil
             ) { (buffer, time) in
-                self.update(buffer: buffer, time: time)
+                
+                Dispatch.global(qos: .utility).async {
+                    self.update(buffer: buffer, time: time)
+                }
             }
             
-            speechRecognition.start()
+        speechRecognition.start()
             
         state = .running
         

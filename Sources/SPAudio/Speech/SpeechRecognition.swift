@@ -11,6 +11,7 @@ import Speech
 
 public class SpeechRecognition {
     
+    
     let speechRecognizer = SFSpeechRecognizer()
     // NEEDS TO BE A NEW REQUEST EACH TIME: "Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'SFSpeechAudioBufferRecognitionRequest cannot be re-used'"
     var request: SFSpeechAudioBufferRecognitionRequest?
@@ -21,6 +22,20 @@ public class SpeechRecognition {
     
     var triggersWords: [String] = ["thunder"]
     
+    static let defaultIsEnabled = false
+    var isEnabled: Bool {
+        didSet {
+            if !isEnabled {
+                self.stop()
+            }
+        }
+    }
+    
+    init(isEnabled: Bool? = nil){
+        let isEnabled = isEnabled ?? SpeechRecognition.defaultIsEnabled
+        self.isEnabled = isEnabled
+    }
+    
     enum State {
         case off
         case on
@@ -30,11 +45,12 @@ public class SpeechRecognition {
     func start(){
         // PUT A CHECK TO MAKE SURE IT'S ENABLED.
         //try? requestSpeechRecognizerPermission()
+        guard isEnabled else { return }
         setupRequest()
         state = .on
     }
     
-    func setupRequest(){
+    private func setupRequest(){
         request = SFSpeechAudioBufferRecognitionRequest()
         guard
             let speechRecognizer = speechRecognizer,
