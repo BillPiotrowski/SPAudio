@@ -32,7 +32,7 @@ public class AudioMeter {
     private let meter: TimedMeter
     private let meterMinimum = MeterMinimum()
     private let meterMaximum = MeterMaximum()
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     
     /// Multiplier used to increase dynamic range.
     private var scale: IntensityMultipler
@@ -61,7 +61,7 @@ public class AudioMeter {
     ///   - audioEngine: The audio engine that the audio node to be measured will exist on.
     ///   - speed: The speed of the meter in seconds. Meter measures intensity over a lagging period of time. If not set, default will be used. Default is 2.5 seconds.
     public init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         speed: Second? = nil,
         isSpeechEnabled: Bool? = nil
     ){

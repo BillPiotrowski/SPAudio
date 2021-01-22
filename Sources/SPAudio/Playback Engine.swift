@@ -15,12 +15,12 @@ public class AudioPlayback {
     private let outputConnectionPoints: [AVAudioConnectionPoint]
     private let sequencerA: AudioSequencer
     private let sequencerB: AudioSequencer
-    public let audioEngine: AudioEngineProtocol
+    public let audioEngine: AudioEngine
     private var primarySequencer: AudioSequencer
     public let effects: AudioEffects
     private(set) var isConnected: Bool = false
     
-    public init(audioEngine: AudioEngineProtocol, outputConnectionPoints: [AVAudioConnectionPoint]){
+    public init(audioEngine: AudioEngine, outputConnectionPoints: [AVAudioConnectionPoint]){
         let defaultAudioFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
         self.audioEngine = audioEngine
         self.defaultAudioFormat = defaultAudioFormat

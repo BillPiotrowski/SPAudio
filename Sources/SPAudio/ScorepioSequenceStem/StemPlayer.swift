@@ -21,7 +21,7 @@ public class StemPlayer {
     internal let audioPlayer: AudioPlayer
     private let fxConnectionPoints: [AVAudioConnectionPoint]
     private let outputConnectionPoints: [AVAudioConnectionPoint]
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     public let stemIndex: Int
 
     
@@ -37,7 +37,7 @@ public class StemPlayer {
     
     
     init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         outputConnectionPoints: [AVAudioConnectionPoint],
         fxConnectionPoints: [AVAudioConnectionPoint],
         stemIndex: Int

@@ -19,11 +19,11 @@ public class AudioEffects{
     private let effectsIn = AVAudioMixerNode()
     private let outputConnectionPoints: [AVAudioConnectionPoint]
     private let defaultAudioFormat: AVAudioFormat?
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     public private(set) var isConnected: Bool = false
     
     public init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         outputConnectionPoints: [AVAudioConnectionPoint],
         defaultAudioFormat: AVAudioFormat?
     ){

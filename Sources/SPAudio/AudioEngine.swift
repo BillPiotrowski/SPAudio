@@ -33,7 +33,7 @@ public protocol PlaybackBrainProtocol: class {
 /// A Void element that can be a placeholder for more useful information in the future. This is sent as a value when the audio engine periodically updates every 0.2 (currently) seconds.
 public typealias AudioEnginePeriodicUpdate = Void
 
-public class AudioEngine: AudioEngineProtocol, Observable2 {
+public class AudioEngine: Observable2 {
     //var observations: [ObjectIdentifier : Observer] = [:]
     public var observations2: [ObjectIdentifier : Observer2] = [:]
     

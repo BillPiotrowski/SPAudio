@@ -14,7 +14,7 @@ import ReactiveSwift
 
 public class AudioPlayer {
     internal let avAudioPlayerNode = AVAudioPlayerNode()
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     private let outputConnectionPoints: [AVAudioConnectionPoint]
     internal private(set) var audioFile: AVAudioFile? = nil
     public private(set) var isConnected: Bool = false
@@ -36,7 +36,7 @@ public class AudioPlayer {
     ///   - audioEngine: the AudioEngine instance that the AudioPlayer instance will attach to. Player maintains a strong retain of this for the entire lifecycle.
     ///   - outputConnectionPoints: The registered output for the AudioPlayer instance. AudioPlayer maintains a strong retain for the entire lifecycle.
     public init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         outputConnectionPoints: [AVAudioConnectionPoint]
     ){
         let initialAudioPlayerState = AudioPlayer.State.standby

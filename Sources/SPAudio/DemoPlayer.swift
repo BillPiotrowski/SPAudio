@@ -11,10 +11,10 @@ import AVKit
 
 class DemoPlayer {
     private let audioPlayer: AudioPlayer
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     
     init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         outputConnectionPoint: AVAudioConnectionPoint
     ){
         self.audioEngine = audioEngine

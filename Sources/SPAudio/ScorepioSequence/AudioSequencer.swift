@@ -35,7 +35,7 @@ public class AudioSequencer /*: Observable2 */{
     
     private let playerConnectionPoints: [AVAudioConnectionPoint]
     private let fxConnectionPoints: [AVAudioConnectionPoint]
-    private let audioEngine: AudioEngineProtocol
+    private let audioEngine: AudioEngine
     
     
     
@@ -59,7 +59,7 @@ public class AudioSequencer /*: Observable2 */{
     public let synth: Synth
     
     public init(
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         playerConnectionPoint: AVAudioConnectionPoint,
         fxConnectionPoint: AVAudioConnectionPoint
     ){
@@ -72,7 +72,7 @@ public class AudioSequencer /*: Observable2 */{
         )
         let synth = Synth(
             wire: synthConnectionPoint,
-            audioEngine: audioEngine as! AudioEngine
+            audioEngine: audioEngine 
         )
         
         let initialTransportState = AudioTransportState.stopped
@@ -389,7 +389,7 @@ extension AudioSequencer {
 extension AudioSequencer {
     internal static func stemPlayers(
         from trackCount: Int,
-        audioEngine: AudioEngineProtocol,
+        audioEngine: AudioEngine,
         outputMixer: AVAudioMixerNode,
         fxMixer: AVAudioMixerNode
     ) -> [StemPlayer] {
