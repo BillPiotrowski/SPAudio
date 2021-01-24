@@ -8,15 +8,49 @@
 
 import SPCommon
 import AVFoundation
-//import AudioKit
+import Promises
 import AudioKitLite
+import ReactiveSwift
 
 public class AudioSession {
-    let avSession = AudioSession.avSession
+    let avSession: AVAudioSession
+    
+    /// A property defining the state of RecordPermission for this app.
+    ///
+    /// - note: This property is set at launch and will only be variable if the value is .undetermined. If the value is set to .granted or .denied, the input signal will be completed and no changes will be possible.
+    ///
+    /// The only way to change the setting from .granted or .denied is through the iPhone settings, which will crash the app and force a restart.
+    let recordPermissionProperty: Property<RecordPermission>
+    private let recordPermissionInput: Signal<RecordPermission, Never>.Observer
+    
+    /// - todo: remove singleton
     static public let avSession = AVAudioSession.sharedInstance()
     
     public init(){
+        let avSession = AudioSession.avSession
+        
+        let initialRecordPermission = avSession.recordPermission
+        let recordPermissionPipe = Signal<RecordPermission, Never>.pipe()
+        
+        let recordPermissionProperty = Property(
+            initial: initialRecordPermission,
+            then: recordPermissionPipe.output
+        )
+        
+        // Completes signal if permission is denied or granted since only way to change is in iPhone settings.
+        // Any change to iPhone settings appears to crash app, so no reason to monitor.
+        switch initialRecordPermission {
+        case .denied, .granted: recordPermissionPipe.input.sendCompleted()
+        case .undetermined: break
+        @unknown default: break
+        }
+        
+        self.avSession = avSession
+        self.recordPermissionInput = recordPermissionPipe.input
+        self.recordPermissionProperty = recordPermissionProperty
+        
         configureAudioSession()
+        
     }
     
     private func configureAudioSession(){
@@ -93,6 +127,42 @@ public class AudioSession {
         var message: String {
             switch self {
             case .settingDefaultNoAvailableInputs: return "Could not set preferred input because there are no available inputs."
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+// MARK: RECORD PERMISSION
+extension AudioSession {
+    
+    /// The current state of Record Permission for this app on this device.
+    var recordPermission: RecordPermission {
+        recordPermissionProperty.value
+    }
+//    internal static var recordPermission: RecordPermission {
+//        avSession.recordPermission
+//    }
+//    internal static var isRecordingPermitted: Bool {
+//        return AudioSession.recordPermission.isRecordingPermitted
+//    }
+    
+    /// Requests permission from the user to use the microphone with this app.
+    /// - Returns: Returns a Promise that encapsulates a Bool indicating if the user granted permission. Will return false immediately if the user has already granted or denied access.
+    public func requestRecordPermission(
+    ) -> Promise<Bool> {
+        return Promise<Bool>{ fulfill, reject in
+            //avSession.requestRecordPermission{
+            AudioSession.avSession.requestRecordPermission{ didGrantPermission in
+                self.recordPermissionInput.send(
+                    value: self.avSession.recordPermission
+                )
+                fulfill(didGrantPermission)
             }
         }
     }

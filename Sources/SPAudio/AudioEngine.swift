@@ -111,7 +111,9 @@ public class AudioEngine /*: Observable2 */{
         //let observation = Observation.audioEngine
 //        sendToObservers2(observation)
         //sendToObservers(observation)
-        print("TIMER UPDATE!")
+        
+//        print("TIMER UPDATE!")
+        
         if !self.isRunning {
             timer.invalidate()
         }
@@ -327,7 +329,7 @@ public struct AudioInputDevice {
         let portDescription = session.preferredInput
         //    else { throw AudioInputDeviceError.noPreferredInput }
         
-        guard AudioSession.isRecordingPermitted
+        guard session.recordPermission.isRecordingPermitted
             else { throw AudioInputDeviceError.micPermissionNotGranted }
         
         let format = inputNode.inputFormat(forBus: bus)

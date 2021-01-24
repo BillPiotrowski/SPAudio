@@ -15,6 +15,8 @@ public class InputAudioEngine {
     let outputConnectionPoints: [AVAudioConnectionPoint]
     public let recordedDialogMixer: AVAudioMixerNode
     
+    public let speechRecognition: SpeechRecognition
+    
     public let recordedDialogPlayer: AudioPlayer
     // MAKE INTERNAL
     public let meter: AudioMeter
@@ -27,10 +29,19 @@ public class InputAudioEngine {
         audioEngine.engine.attach(recordedDialogMixer)
         let mixinginput = AVAudioConnectionPoint(node: recordedDialogMixer, bus: 2)
         
+        
+        let speechRecognition = SpeechRecognition(
+            audioSession: audioEngine.session
+        )
+        
+        self.speechRecognition = speechRecognition
         self.audioEngine = audioEngine
         self.outputConnectionPoints = outputConnectionPoints
         
-        self.meter = AudioMeter(audioEngine: audioEngine)
+        self.meter = AudioMeter(
+            audioEngine: audioEngine,
+            speechRecognition: speechRecognition
+        )
         
         self.recordedDialogPlayer = AudioPlayer(
             audioEngine: audioEngine,

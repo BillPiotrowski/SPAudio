@@ -10,13 +10,13 @@ import Promises
 // MARK: SPEECH RECOGNITION PERMISSION
 // MAKING THESE NOT STATIC TO ENCOURAGE INSTANTIATING BEFORE CALLING AND REDUCE SINGLETONS.
 extension InputAudioEngine {
-    public var speechRecognizerAuthorizationStatus: SpeechRecognizerAuthorizationStatus {
-        SpeechRecognition.speechRecognizerAuthorizationStatus
+    public var speechRecognizerAuthorizationStatus: SpeechRecognition.AuthorizationStatus {
+        self.speechRecognition.permission
     }
     
     public func requestSpeechRecognizerPermission(
-    ) -> Promise<SpeechRecognizerAuthorizationStatus> {
-        return SpeechRecognition.requestSpeechRecognizerPermission()
+    ) -> Promise<SpeechRecognition.AuthorizationStatus> {
+        return self.speechRecognition.requestSpeechRecognizerPermission()
     }
     public var isSpeechRecognitionPermitted: Bool {
         return speechRecognizerAuthorizationStatus.isEnabled
@@ -27,16 +27,16 @@ extension InputAudioEngine {
 // MAKING THESE NOT STATIC TO ENCOURAGE INSTANTIATING BEFORE CALLING AND REDUCE SINGLETONS.
 extension InputAudioEngine {
     public var recordPermission: RecordPermission {
-        AudioSession.recordPermission
+        audioEngine.session.recordPermission
     }
     public var isRecordingPermitted: Bool {
-        AudioSession.isRecordingPermitted
+        recordPermission.isRecordingPermitted
     }
     
     /// Requests permission from the user to use the microphone with this app.
     /// - Returns: Returns a Promise that encapsulates a Bool indicating if the user granted permission. Will return false immediately if the user has already granted or denied access.
     public func requestRecordPermission(
     ) -> Promise<Bool> {
-        return AudioSession.requestRecordPermission()
+        audioEngine.session.requestRecordPermission()
     }
 }

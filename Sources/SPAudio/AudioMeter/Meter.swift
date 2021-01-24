@@ -39,7 +39,7 @@ public class AudioMeter {
     
     public var speechTrigger: (_ word: String) -> Void = { arg in } {
         didSet {
-            speechRecognition.triggerCallback = speechTrigger
+            speechRecognition?.triggerCallback = speechTrigger
         }
     }
     
@@ -49,8 +49,8 @@ public class AudioMeter {
     
     var state: State = .off
     
-    private let speechRecognition: SpeechRecognition
-    public static let defaultIsSpeechEnabled = false
+    private weak var speechRecognition: SpeechRecognition?
+//    public static let defaultIsSpeechEnabled = false
     
     private let intensitySignalInput: Signal<Intensity, Never>.Observer
     public let intensityProperty: ReactiveSwift.Property<Intensity>
@@ -63,18 +63,15 @@ public class AudioMeter {
     public init(
         audioEngine: AudioEngine,
         speed: Second? = nil,
-        isSpeechEnabled: Bool? = nil
+        speechRecognition: SpeechRecognition
     ){
-        let isSpeechEnabled = isSpeechEnabled ?? AudioMeter.defaultIsSpeechEnabled
+//        let isSpeechEnabled = isSpeechEnabled ?? AudioMeter.defaultIsSpeechEnabled
         let initialIntensity = AudioMeter.defaultIntensity
         
         let intensityPipe = Signal<Intensity, Never>.pipe()
         let intensityProperty = ReactiveSwift.Property(
             initial: initialIntensity,
             then: intensityPipe.output
-        )
-        let speechRecognition = SpeechRecognition(
-            isEnabled: isSpeechEnabled
         )
         
         let durationMeter = TimedMeter(speed: speed)
@@ -92,21 +89,6 @@ public class AudioMeter {
     
 }
 
-extension AudioMeter {
-    public var isSpeechEnabled: Bool {
-        get { return self.speechRecognition.isEnabled }
-        set {
-            speechRecognition.isEnabled = newValue
-            switch newValue {
-            case true:
-                if self.isRunning {
-                    speechRecognition.start()
-                }
-            case false: return
-            }
-        }
-    }
-}
 
 // MARK: LISTENER UPDATE
 extension AudioMeter {
@@ -120,7 +102,7 @@ extension AudioMeter {
             else { return }
         
         // CHECK IT'S ENABLED?
-        self.speechRecognition.append(buffer: buffer)
+        self.speechRecognition?.append(buffer: buffer)
         
         let bufferDecibelReading = bufferReading.decibel
         let bufferDecibelRatio = decibelRatio(from: bufferDecibelReading)
@@ -194,7 +176,17 @@ extension AudioMeter {
                 }
             }
             
-        speechRecognition.start()
+        // THIS SHOULD BE REMOVED AND HANDLED AT A HIGHER LEVEL?
+        //
+        //
+        //
+        //
+        //
+        // !!!!!
+        //
+        //
+        //
+        speechRecognition?.start()
             
         state = .running
         
@@ -207,7 +199,19 @@ extension AudioMeter {
         node?.removeTap(onBus: 0)
         
         // HAS CREATED AN ERROR WITHOUT ABOVE GUARD
-        speechRecognition.stop()
+        //
+        //
+        // !!!!!!
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        //
+        // THIS SHOULD BE REMOVED AND HANDLED AT A HIGHER LEVEL
+        speechRecognition?.stop()
         audioEngine.stopIfNotRunning()
         reset()
         
