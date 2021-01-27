@@ -6,7 +6,7 @@
 //
 
 import Promises
-
+/*
 // MARK: SPEECH RECOGNITION PERMISSION
 // MAKING THESE NOT STATIC TO ENCOURAGE INSTANTIATING BEFORE CALLING AND REDUCE SINGLETONS.
 extension InputAudioEngine {
@@ -22,7 +22,6 @@ extension InputAudioEngine {
         return speechRecognizerAuthorizationStatus.isEnabled
     }
 }
-
 // MARK: RECORD PERMISSION
 // MAKING THESE NOT STATIC TO ENCOURAGE INSTANTIATING BEFORE CALLING AND REDUCE SINGLETONS.
 extension InputAudioEngine {
@@ -40,3 +39,5 @@ extension InputAudioEngine {
         audioEngine.session.requestRecordPermission()
     }
 }
+
+ */

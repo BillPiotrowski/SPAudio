@@ -142,7 +142,7 @@ public class AudioSession {
 extension AudioSession {
     
     /// The current state of Record Permission for this app on this device.
-    var recordPermission: RecordPermission {
+    public var recordPermission: RecordPermission {
         recordPermissionProperty.value
     }
 //    internal static var recordPermission: RecordPermission {

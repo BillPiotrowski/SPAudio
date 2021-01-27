@@ -171,22 +171,11 @@ extension AudioMeter {
                 format: nil
             ) { (buffer, time) in
                 
-                Dispatch.global(qos: .utility).async {
+                Dispatch.global(qos: .userInitiated).async {
                     self.update(buffer: buffer, time: time)
                 }
             }
             
-        // THIS SHOULD BE REMOVED AND HANDLED AT A HIGHER LEVEL?
-        //
-        //
-        //
-        //
-        //
-        // !!!!!
-        //
-        //
-        //
-        speechRecognition?.start()
             
         state = .running
         
@@ -198,20 +187,6 @@ extension AudioMeter {
         // HAS CREATED AN ERROR WITHOUT ABOVE GUARD
         node?.removeTap(onBus: 0)
         
-        // HAS CREATED AN ERROR WITHOUT ABOVE GUARD
-        //
-        //
-        // !!!!!!
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        //
-        // THIS SHOULD BE REMOVED AND HANDLED AT A HIGHER LEVEL
-        speechRecognition?.stop()
         audioEngine.stopIfNotRunning()
         reset()
         

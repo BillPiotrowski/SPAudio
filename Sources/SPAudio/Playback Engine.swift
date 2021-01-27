@@ -19,25 +19,65 @@ public class AudioPlayback {
     private var primarySequencer: AudioSequencer
     public let effects: AudioEffects
     private(set) var isConnected: Bool = false
+    public let speechTriggeredPlayer: AudioPlayer
     
-    public init(audioEngine: AudioEngine, outputConnectionPoints: [AVAudioConnectionPoint]){
-        let defaultAudioFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
+    public init(
+        audioEngine: AudioEngine,
+        outputConnectionPoints: [AVAudioConnectionPoint]
+    ){
+        
+        let defaultAudioFormat = AVAudioFormat(
+            standardFormatWithSampleRate: 44100,
+            channels: 2
+        )
+        
+        let effectsConnectionPoint = AVAudioConnectionPoint(
+            node: masterMixer,
+            bus: 0
+        )
+        let sequencerAConnectionPoint = AVAudioConnectionPoint(
+            node: masterMixer,
+            bus: 1
+        )
+        let sequencerBConnectionPoint = AVAudioConnectionPoint(
+            node: masterMixer,
+            bus: 2
+        )
+        let speechPlayerConnectionPoint = AVAudioConnectionPoint(
+            node: masterMixer,
+            bus: 3
+        )
+        
+        
+        
+        
+        let effects = AudioEffects(
+            audioEngine: audioEngine,
+            outputConnectionPoints: [effectsConnectionPoint],
+            defaultAudioFormat: defaultAudioFormat
+        )
+        let sequencerA = AudioSequencer(
+            audioEngine: audioEngine,
+            playerConnectionPoint: sequencerAConnectionPoint,
+            fxConnectionPoint: effects.getInputConnectionPoint(bus: 0)
+        )
+        let sequencerB = AudioSequencer(
+            audioEngine: audioEngine,
+            playerConnectionPoint: sequencerBConnectionPoint,
+            fxConnectionPoint: effects.getInputConnectionPoint(bus: 1)
+        )
+        let speechTriggeredPlayer = AudioPlayer(
+            audioEngine: audioEngine,
+            outputConnectionPoints: [speechPlayerConnectionPoint]
+        )
+        
+        
         self.audioEngine = audioEngine
         self.defaultAudioFormat = defaultAudioFormat
         self.outputConnectionPoints = outputConnectionPoints
-        
-        let effects = AudioEffects(audioEngine: audioEngine, outputConnectionPoints: [AVAudioConnectionPoint(node: masterMixer, bus: 0)], defaultAudioFormat: defaultAudioFormat
-        )
-        self.sequencerA = AudioSequencer(
-            audioEngine: audioEngine,
-            playerConnectionPoint: AVAudioConnectionPoint(node: masterMixer, bus: 1),
-            fxConnectionPoint: effects.getInputConnectionPoint(bus: 0)
-        )
-        self.sequencerB = AudioSequencer(
-            audioEngine: audioEngine,
-            playerConnectionPoint: AVAudioConnectionPoint(node: masterMixer, bus: 2),
-            fxConnectionPoint: effects.getInputConnectionPoint(bus: 1)
-        )
+        self.speechTriggeredPlayer = speechTriggeredPlayer
+        self.sequencerA = sequencerA
+        self.sequencerB = sequencerB
         self.effects = effects
         
         self.primarySequencer = sequencerA
@@ -55,12 +95,10 @@ extension AudioPlayback {
 // PUBLIC METHODS
 extension AudioPlayback {
     public func connect() throws {
-        print("CONNECTING PLAYBACK BRAIN")
         let outPoints = try AVAudioConnectionPoint.connectable(outputConnectionPoints)
         engine.connect(masterMixer, to: outPoints, fromBus: 0, format: defaultAudioFormat)
         try effects.connect()
         isConnected = checkConnection()
-        print("CONNECTED PLAYBACK BRAIN: \(isConnected)")
     }
     func disconnect(){
         sequencerA.disconnect()

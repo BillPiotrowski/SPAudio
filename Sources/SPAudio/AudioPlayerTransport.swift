@@ -10,9 +10,7 @@ import SPCommon
 import Foundation
 import ReactiveSwift
 
-// PLAY SHOULD THROW??
-
-public protocol AudioPlayerTransport /*: Observable2*/ {
+public protocol AudioPlayerTransport {
     var audioTransportState: Property<AudioTransportState> { get }
     var transportState: AudioTransportState { get }
     var isPlaying: Bool { get }
@@ -21,7 +19,6 @@ public protocol AudioPlayerTransport /*: Observable2*/ {
     func stop()
     func pause()
     func playStopToggle()
-    //func prepareToPlay()
     func prepareToPlay() throws
 }
 extension AudioPlayerTransport {

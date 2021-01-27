@@ -47,6 +47,8 @@ public class SpeechRecognition: NSObject {
     private let isRunningInput: Signal<Bool, Never>.Observer
     
     /// A steam of the most recent word or utterance detected by speech recognition.
+    ///
+    /// - note: Skips repeats.
     public let wordSignal: Signal<String, Never>
     private let wordInput: Signal<String, Never>.Observer
     
@@ -99,7 +101,7 @@ public class SpeechRecognition: NSObject {
         self.permissionInput = permissionPipe.input
         self.isRunningInput = isRunningPipe.input
         self.wordInput = wordPipe.input
-        self.wordSignal = wordPipe.output
+        self.wordSignal = wordPipe.output.skipRepeats()
         
         super.init()
         
@@ -169,7 +171,7 @@ extension SpeechRecognition {
             guard let string = transcription.segments.last?.substring else {
                 return
             }
-            
+//            transcription.segments.last!.timestamp
 //            print(string)
             wordInput.send(value: string)
 //            dump(transcription.segments.last?.alternativeSubstrings)
@@ -331,7 +333,7 @@ extension SpeechRecognition {
 // MARK: - REQUEST SPEECH DETECTION PERMISSION
 extension SpeechRecognition {
     // WOULD PREFER THESE BE INTERNAL AND NOT A SINGLETON
-    internal func requestSpeechRecognizerPermission(
+    public func requestSpeechRecognizerPermission(
     ) -> Promise<AuthorizationStatus> {
         return Promise<AuthorizationStatus>(on: .main) { fulfill, reject in
             guard #available(iOS 10.0, *) else {

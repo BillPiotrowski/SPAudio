@@ -170,6 +170,15 @@ extension AudioPlayer {
     private func audioFileCompletedPlaying(){
         if loop && transportState == .playing {
             try? play()
+        } else {
+            // NOT SURE IF THIS SHOULD BE MAIN OR ANOTHER THREAD?? WILL BREAK IF NOT USING DISPATCH QUEUE
+            // Changing threads causes issues where the stop is sent after a replay is sent.
+//            DispatchQueue.main {
+//                self.stop()
+//            }
+            // Audio file has completed playing, but node still show isPlaying = true. Setting transport state to .stopped regardless.
+            self.transportStateInput.send(value: .stopped)
+            isScheduled = false
         }
     }
 }
@@ -212,7 +221,7 @@ extension AudioPlayer: AudioPlayerTransport {
         }
     }
     public var isPlaying: Bool {
-        return avAudioPlayerNode.isPlaying
+        return self.transportState.isPlaying
     }
 }
 

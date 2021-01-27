@@ -48,6 +48,8 @@ public class AudioEngine /*: Observable2 */{
 //    let avMixerAKNode: Node
     public let session = AudioSession()
     
+    
+    // ABstract and hold in array so this AudioEngine is not scoped to Scorepio project?
     public weak var playbackEngine: AudioPlayback?
     public weak var inputEngine: InputAudioEngine?
     
