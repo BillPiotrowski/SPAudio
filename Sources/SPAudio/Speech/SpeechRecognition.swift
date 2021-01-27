@@ -318,7 +318,25 @@ extension SpeechRecognition {
             )
         }
     }
+    public var stateProperty: Property<State> {
+        Property.combineLatest(
+            isUserEnabledProperty,
+            isAppleAvailableProperty,
+            permissionProperty,
+            isRunningProperty,
+            audioSession.recordPermissionProperty
+        ).map {
+            return State(
+                isUserEnabled: $0.0,
+                isAppleAvailable: $0.1,
+                permission: $0.2,
+                isRunning: $0.3,
+                recordPermissionGranted: $0.4.isRecordingPermitted
+            )
+        }
+    }
 }
+
 
 extension SpeechRecognition {
     var isOnDeviceRecognitionSupported: Bool {
