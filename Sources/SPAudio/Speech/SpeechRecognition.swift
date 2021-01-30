@@ -39,7 +39,9 @@ public class SpeechRecognition: NSObject {
     /// The state of speech recognition permission for this app on this device.
     ///
     /// - note: Once this is in a state of granted or denied and not undetermined, then the signal is completed and will not change.
-    let permissionProperty: Property<AuthorizationStatus>
+    ///
+    /// Made public for use in setting UI.
+    public let permissionProperty: Property<AuthorizationStatus>
     private let permissionInput: Signal<AuthorizationStatus, Never>.Observer
     
     /// Indicates whether the speech recognition class is currently running.

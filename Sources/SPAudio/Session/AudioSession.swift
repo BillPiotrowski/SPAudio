@@ -20,8 +20,14 @@ public class AudioSession {
     /// - note: This property is set at launch and will only be variable if the value is .undetermined. If the value is set to .granted or .denied, the input signal will be completed and no changes will be possible.
     ///
     /// The only way to change the setting from .granted or .denied is through the iPhone settings, which will crash the app and force a restart.
-    let recordPermissionProperty: Property<RecordPermission>
+    public let recordPermissionProperty: Property<RecordPermission>
     private let recordPermissionInput: Signal<RecordPermission, Never>.Observer
+    
+    /// Property defining the current preferred input.
+    ///
+    /// - warning: There is no listener on the underlying audio session so this is only updated when a change is manually made by the user in the Scorepio app. Can improve this logic.
+    public let preferredInputProperty: Property<AudioPortDescription?>
+    private let preferredInputInput: Signal<AudioPortDescription?, Never>.Observer
     
     /// - todo: remove singleton
     static public let avSession = AVAudioSession.sharedInstance()
@@ -45,9 +51,25 @@ public class AudioSession {
         @unknown default: break
         }
         
+        let preferredInputPipe = Signal<AudioPortDescription?, Never>.pipe()
+        let initialPreferredInput: AudioPortDescription?
+        if let input = avSession.preferredInput {
+            initialPreferredInput = AudioPortDescription(
+                portDescription: input
+            )
+        } else {
+            initialPreferredInput = nil
+        }
+        let preferredInputProperty = Property(
+            initial: initialPreferredInput,
+            then: preferredInputPipe.output
+        )
+        
         self.avSession = avSession
         self.recordPermissionInput = recordPermissionPipe.input
         self.recordPermissionProperty = recordPermissionProperty
+        self.preferredInputInput = preferredInputPipe.input
+        self.preferredInputProperty = preferredInputProperty
         
         configureAudioSession()
         
@@ -95,6 +117,7 @@ public class AudioSession {
         try avSession.setPreferredInput(
             port.portDescription
         )
+        self.preferredInputInput.send(value: port)
     }
     
     
