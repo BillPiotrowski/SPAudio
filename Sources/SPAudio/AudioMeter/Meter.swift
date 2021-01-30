@@ -37,12 +37,6 @@ public class AudioMeter {
     /// Multiplier used to increase dynamic range.
     private var scale: IntensityMultipler
     
-    public var speechTrigger: (_ word: String) -> Void = { arg in } {
-        didSet {
-            speechRecognition?.triggerCallback = speechTrigger
-        }
-    }
-    
     // MAY BE ABLE TO MAKE THIS COMPUTED?
     /// The average reading of quietest readings based on the MeterMinumum struct.
     internal private(set) var averageMinimumDecibel: Decibel

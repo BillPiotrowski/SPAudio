@@ -23,11 +23,6 @@ public class SpeechRecognition: NSObject {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     
-    
-    var triggerCallback: (_ word: String) -> Void = { arg in }
-    
-    var triggersWords: [String] = ["thunder"]
-    
     /// The property of whether or not the user has enabled speech detection during this session. Can be enabled or disabled at any time by changing the isUserEnabled value.
     let isUserEnabledProperty: Property<Bool>
     private let userEnabledInput: Signal<Bool, Never>.Observer
@@ -177,11 +172,11 @@ extension SpeechRecognition {
 //            print(string)
             wordInput.send(value: string)
 //            dump(transcription.segments.last?.alternativeSubstrings)
-            let uppercasedTriggerWords = triggersWords.map { $0.uppercased() }
-            if uppercasedTriggerWords.contains(string.uppercased()){
+//            let uppercasedTriggerWords = triggersWords.map { $0.uppercased() }
+//            if uppercasedTriggerWords.contains(string.uppercased()){
                 //print("TRIGGER FROM SPEECH RECOGNITION: \(string)!")
-                triggerCallback(string)
-            }
+//                triggerCallback(string)
+//            }
         }
     }
     
