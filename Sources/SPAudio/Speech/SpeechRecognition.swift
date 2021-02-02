@@ -43,6 +43,9 @@ public class SpeechRecognition: NSObject {
     let isRunningProperty: Property<Bool>
     private let isRunningInput: Signal<Bool, Never>.Observer
     
+    private let transcriptionInput: Signal<SFTranscription, Never>.Observer
+    public let transcriptionSignal: Signal<SFTranscription, Never>
+    
     /// A steam of the most recent word or utterance detected by speech recognition.
     ///
     /// - note: Skips repeats.
@@ -86,6 +89,8 @@ public class SpeechRecognition: NSObject {
         
         let wordPipe = Signal<String, Never>.pipe()
         
+        let transcriptionPipe = Signal<SFTranscription, Never>.pipe()
+        
         
         self.audioSession = audioSession
         self.isUserEnabledProperty = isUserEnabledProperty
@@ -99,6 +104,8 @@ public class SpeechRecognition: NSObject {
         self.isRunningInput = isRunningPipe.input
         self.wordInput = wordPipe.input
         self.wordSignal = wordPipe.output.skipRepeats()
+        self.transcriptionInput = transcriptionPipe.input
+        self.transcriptionSignal = transcriptionPipe.output
         
         super.init()
         
@@ -163,6 +170,7 @@ extension SpeechRecognition {
             print("TRANSCRIPTION ERROR: \(error.localizedDescription).")
         }
         if let transcription = result?.bestTranscription {
+            self.transcriptionInput.send(value: transcription)
 //            result?.transcriptions
             // BUILD IN CONFIDENCE CHECK
             guard let string = transcription.segments.last?.substring else {
