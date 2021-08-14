@@ -29,6 +29,7 @@ class MeterMaximum {
     }
     
     var lowestScaledLevelReading: AudioMeter.Intensity {
+        // BAD THREAD ACCESS!!
         return maximumScaledLevelReadings.last ?? 0
     }
     

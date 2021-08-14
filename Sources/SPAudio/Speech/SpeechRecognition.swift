@@ -21,6 +21,7 @@ public class SpeechRecognition: NSObject {
     
     // NEEDS TO BE A NEW REQUEST EACH TIME: "Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'SFSpeechAudioBufferRecognitionRequest cannot be re-used'"
     private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var requestStart: Date?
     private var recognitionTask: SFSpeechRecognitionTask?
     
     /// The property of whether or not the user has enabled speech detection during this session. Can be enabled or disabled at any time by changing the isUserEnabled value.
@@ -45,6 +46,11 @@ public class SpeechRecognition: NSObject {
     
     private let transcriptionInput: Signal<SFTranscription, Never>.Observer
     public let transcriptionSignal: Signal<SFTranscription, Never>
+    
+    public let sampledTranscripion: Signal<SFTranscription, Never>
+    private let transcriptionSampleInput: Signal<Void, Never>.Observer
+    
+    
     
     /// A steam of the most recent word or utterance detected by speech recognition.
     ///
@@ -91,12 +97,19 @@ public class SpeechRecognition: NSObject {
         
         let transcriptionPipe = Signal<SFTranscription, Never>.pipe()
         
+        let transriptionSamplerPipe = Signal<Void, Never>.pipe()
+        
+        let sampledTranscripion = transcriptionPipe.output.sample(
+            on: transriptionSamplerPipe.output
+        )
         
         self.audioSession = audioSession
         self.isUserEnabledProperty = isUserEnabledProperty
         self.isAppleAvailableProperty = appleAvailableProperty
         self.permissionProperty = permissionProperty
         self.isRunningProperty = isRunningProperty
+        self.transcriptionSampleInput = transriptionSamplerPipe.input
+        self.sampledTranscripion = sampledTranscripion
         
         self.userEnabledInput = userEnabledPipe.input
         self.appleAvailableInput = appleAvailablePipe.input
@@ -154,10 +167,11 @@ extension SpeechRecognition {
         guard let speechRecognizer = speechRecognizer
         else {
             // Push error to state?
-            print("Could not set up speech recognition. speechRecognizer does not exist.")
+//            print("Could not set up speech recognition. speechRecognizer does not exist.")
             return
         }
         self.request = request
+        self.requestStart = Date.init()
         self.recognitionTask = speechRecognizer.recognitionTask(
             with: request
         ) { [unowned self] (result, error) in
@@ -167,7 +181,10 @@ extension SpeechRecognition {
     
     func taskHandler(result: SFSpeechRecognitionResult?, error: Error?){
         if let error = error {
-            print("TRANSCRIPTION ERROR: \(error.localizedDescription).")
+//            print("TRANSCRIPTION ERROR: \(error.localizedDescription).")
+            // If there is an error, the result appears to be nil.
+            self.transcriptionSampleInput.send(value: ())
+            return
         }
         if let transcription = result?.bestTranscription {
             self.transcriptionInput.send(value: transcription)
@@ -197,6 +214,15 @@ extension SpeechRecognition {
             print("Speech recognition state is expected to be running, but instead is: \(String(describing: recognitionTask?.state))")
             setupRequest()
         }
+        
+        if
+            let start = self.requestStart,
+            Date() > start.addingTimeInterval(9)
+        {
+            self.request?.endAudio()
+            self.setupRequest()
+        }
+        
         guard let request = request else {
             print("Could not add buffer to speech recognition request because request does not exist.")
             return
