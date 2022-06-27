@@ -19,7 +19,7 @@ let package = Package(
         .package(
             name: "ReactiveSwift",
             url: "https://github.com/ReactiveCocoa/ReactiveSwift.git",
-            from: "6.1.0"
+            from: "7.0.0"
         ),
         .package(
             url: "https://github.com/BillPiotrowski/SPCommon.git",
